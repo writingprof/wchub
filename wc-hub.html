@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Writing Center Hub — AY 2026–27</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+<style>
+  /* =====================================================
+     PASTE YOUR APPS SCRIPT DEPLOYMENT URL HERE:
+     Replace the placeholder below with your URL.
+     It looks like: https://script.google.com/macros/s/ABC.../exec
+  ===================================================== */
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#ffffff;--bg2:#f7f7f5;--bg3:#f0efec;
+    --text:#1a1a18;--text2:#6b6b67;--text3:#9b9b97;
+    --border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.2);
+    --teal:#1D9E75;--teal-light:#E1F5EE;--teal-dark:#085041;
+    --purple:#534AB7;--purple-light:#EEEDFE;--purple-dark:#3C3489;
+    --blue:#185FA5;--blue-light:#E6F1FB;--blue-dark:#0C447C;
+    --amber:#BA7517;--amber-light:#FAEEDA;--amber-dark:#854F0B;
+    --red:#A32D2D;--red-light:#FCEBEB;
+    --green:#3B6D11;--green-light:#EAF3DE;
+    --gray:#5F5E5A;--gray-light:#F1EFE8;
+    --radius:8px;--radius-lg:12px;
+  }
+  body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:var(--bg3);min-height:100vh}
+  .app{max-width:860px;margin:0 auto;padding:1.5rem 1rem 4rem}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px}
+  .topbar h1{font-size:17px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+  .topbar h1 i{font-size:20px;color:var(--teal)}
+  .who-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .who-label{font-size:12px;color:var(--text2)}
+  .who-btn{font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid var(--border2);cursor:pointer;background:var(--bg);color:var(--text2);font-family:'Inter',sans-serif;transition:all .15s}
+  .who-btn:hover{background:var(--bg2)}
+  .who-btn.active{background:var(--teal-light);color:var(--teal-dark);border-color:var(--teal)}
+  .status-bar{font-size:11px;color:var(--text3);background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:4px 10px;display:flex;align-items:center;gap:6px}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--text3)}
+  .status-dot.ok{background:var(--teal)}
+  .status-dot.err{background:var(--red)}
+  .status-dot.loading{background:var(--amber);animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1.5rem;gap:0;background:var(--bg);border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:0 1rem;overflow-x:auto}
+  .tab{font-size:13px;padding:12px 16px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;font-family:'Inter',sans-serif;white-space:nowrap;display:flex;align-items:center;gap:6px;transition:color .15s}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--text);border-bottom-color:var(--text);font-weight:500}
+  .panel{display:none;background:var(--bg);border-radius:0 0 var(--radius-lg) var(--radius-lg);padding:1.5rem;border:1px solid var(--border);border-top:none}
+  .panel.active{display:block}
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:1.5rem}
+  .metric{background:var(--bg2);border-radius:var(--radius);padding:.875rem;text-align:center}
+  .metric-num{font-size:26px;font-weight:600;color:var(--text)}
+  .metric-label{font-size:11px;color:var(--text2);margin-top:3px}
+  .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .section-head h2{font-size:14px;font-weight:600;color:var(--text)}
+  .section-head p{font-size:12px;color:var(--text2);margin-top:2px}
+  .btn{font-size:12px;padding:6px 14px;border-radius:var(--radius);border:1px solid var(--border2);cursor:pointer;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:5px;transition:all .15s}
+  .btn:hover{background:var(--bg2)}
+  .btn-primary{background:var(--teal);color:#fff;border-color:var(--teal)}
+  .btn-primary:hover{background:var(--teal-dark)}
+  .btn-sm{font-size:11px;padding:3px 9px}
+  .btn-danger{color:var(--red);border-color:transparent;background:none}
+  .btn-danger:hover{background:var(--red-light)}
+  .card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.125rem;margin-bottom:8px;transition:border-color .15s}
+  .card:hover{border-color:var(--border2)}
+  .card-top{display:flex;align-items:flex-start;gap:10px}
+  .card-title{font-size:13px;font-weight:500;color:var(--text);flex:1;line-height:1.45}
+  .card-meta{display:flex;align-items:center;gap:6px;margin-top:7px;flex-wrap:wrap}
+  .card-notes{font-size:12px;color:var(--text2);margin-top:7px;line-height:1.55;border-top:1px solid var(--border);padding-top:7px}
+  .card-actions{display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap}
+  .badge{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:400;white-space:nowrap}
+  .b-ops{background:var(--blue-light);color:var(--blue-dark)}
+  .b-out{background:var(--amber-light);color:var(--amber-dark)}
+  .b-prog{background:var(--purple-light);color:var(--purple-dark)}
+  .b-todo{background:var(--gray-light);color:var(--gray)}
+  .b-inprog{background:var(--purple-light);color:var(--purple-dark)}
+  .b-done{background:var(--green-light);color:var(--green)}
+  .b-blocked{background:var(--red-light);color:var(--red)}
+  .b-carter{background:var(--teal-light);color:var(--teal-dark)}
+  .b-michelle{background:var(--purple-light);color:var(--purple-dark)}
+  .b-matthew{background:var(--blue-light);color:var(--blue-dark)}
+  .b-all{background:var(--gray-light);color:var(--gray)}
+  .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+  .dot-high{background:#E24B4A}
+  .dot-med{background:#EF9F27}
+  .dot-low{background:#639922}
+  .due{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:3px}
+  .due.overdue{color:var(--red)}
+  .due.soon{color:var(--amber-dark)}
+  .tl-wrap{margin-bottom:1.5rem}
+  .tl-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px}
+  .tl-track{height:8px;background:var(--bg2);border-radius:4px;border:1px solid var(--border)}
+  .tl-fill{height:100%;background:var(--teal);border-radius:4px;transition:width .4s}
+  .ms-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .ms-row:last-child{border-bottom:none}
+  .ms-date{font-size:12px;color:var(--text2);width:80px;flex-shrink:0}
+  .ms-icon{font-size:16px;flex-shrink:0}
+  .ms-title{font-size:13px;color:var(--text);flex:1;line-height:1.4}
+  .ms-title.past{color:var(--text3);text-decoration:line-through}
+  .log-entry{padding:10px 0;border-bottom:1px solid var(--border)}
+  .log-entry:last-child{border-bottom:none}
+  .log-header{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+  .log-author{font-size:12px;font-weight:500;color:var(--text)}
+  .log-text{font-size:13px;color:var(--text2);line-height:1.55}
+  .empty{font-size:13px;color:var(--text3);text-align:center;padding:2rem 0}
+  .filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:1rem}
+  .filters select{font-size:12px;padding:5px 8px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;cursor:pointer}
+  .divider{margin:1.5rem 0;border:none;border-top:1px solid var(--border)}
+
+  /* Modal */
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;align-items:flex-start;justify-content:center;padding-top:5vh;overflow-y:auto}
+  .overlay.open{display:flex}
+  .modal{background:var(--bg);border-radius:var(--radius-lg);border:1px solid var(--border2);padding:1.5rem;width:100%;max-width:440px;margin:auto}
+  .modal h3{font-size:15px;font-weight:600;margin-bottom:1.25rem;color:var(--text)}
+  .field{margin-bottom:13px}
+  .field label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px;font-weight:500}
+  .field input,.field select,.field textarea{width:100%;font-size:13px;padding:7px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);font-family:'Inter',sans-serif}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--teal);border-color:var(--teal)}
+  .field textarea{height:70px;resize:vertical;line-height:1.5}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;border-top:1px solid var(--border);padding-top:1rem}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  select.status-select{font-size:11px;padding:3px 7px;border-radius:20px}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <h1><i class="ti ti-writing"></i> Writing Center Hub — AY 2026–27</h1>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <div class="who-group">
+        <span class="who-label">Viewing as:</span>
+        <button class="who-btn active" data-who="Michelle" onclick="setUser('Michelle')">Michelle</button>
+        <button class="who-btn" data-who="Matthew" onclick="setUser('Matthew')">Matthew</button>
+        <button class="who-btn" data-who="Carter" onclick="setUser('Carter')">Carter</button>
+      </div>
+      <div class="status-bar" id="status-bar">
+        <div class="status-dot loading" id="status-dot"></div>
+        <span id="status-text">Connecting…</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:var(--bg);border-radius:var(--radius-lg) var(--radius-lg) 0 0;border:1px solid var(--border);border-bottom:none">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</button>
+      <button class="tab" onclick="switchTab('tasks')"><i class="ti ti-checklist"></i> Tasks</button>
+      <button class="tab" onclick="switchTab('milestones')"><i class="ti ti-flag"></i> Milestones</button>
+      <button class="tab" onclick="switchTab('log')"><i class="ti ti-notes"></i> Weekly log</button>
+    </div>
+  </div>
+
+  <div id="panel-dashboard" class="panel active">
+    <div class="metrics" id="metrics"></div>
+    <div class="tl-wrap">
+      <div class="tl-labels"><span>Aug 1, 2026</span><span>Today</span><span>May 31, 2027</span></div>
+      <div class="tl-track"><div class="tl-fill" id="tl-fill" style="width:0%"></div></div>
+    </div>
+    <div class="section-head"><h2>Upcoming deadlines</h2></div>
+    <div id="upcoming"></div>
+    <hr class="divider">
+    <div class="section-head"><h2>Recent activity</h2></div>
+    <div id="recent-activity"></div>
+  </div>
+
+  <div id="panel-tasks" class="panel">
+    <div class="section-head">
+      <h2>All tasks</h2>
+      <button class="btn btn-primary btn-sm" onclick="openTaskModal()"><i class="ti ti-plus"></i> Add task</button>
+    </div>
+    <div class="filters">
+      <select id="f-status" onchange="renderTasks()">
+        <option value="">All statuses</option>
+        <option value="To do">To do</option>
+        <option value="In progress">In progress</option>
+        <option value="Done">Done</option>
+        <option value="Blocked">Blocked</option>
+      </select>
+      <select id="f-owner" onchange="renderTasks()">
+        <option value="">All owners</option>
+        <option value="Carter">Carter</option>
+        <option value="Michelle">Michelle</option>
+        <option value="Matthew">Matthew</option>
+        <option value="All">All three</option>
+      </select>
+      <select id="f-cat" onchange="renderTasks()">
+        <option value="">All categories</option>
+        <option value="Operations">Operations</option>
+        <option value="Outreach">Outreach</option>
+        <option value="Programming">Programming</option>
+      </select>
+    </div>
+    <div id="task-list"></div>
+  </div>
+
+  <div id="panel-milestones" class="panel">
+    <div class="section-head">
+      <h2>Key milestones</h2>
+      <button class="btn btn-primary btn-sm" onclick="openMsModal()"><i class="ti ti-plus"></i> Add milestone</button>
+    </div>
+    <div id="ms-list"></div>
+  </div>
+
+  <div id="panel-log" class="panel">
+    <div class="section-head">
+      <div>
+        <h2>Weekly log</h2>
+        <p>Check-ins, supervision notes, hours.</p>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openLogModal()"><i class="ti ti-plus"></i> Add entry</button>
+    </div>
+    <div id="log-list"></div>
+  </div>
+</div>
+
+<!-- Task modal -->
+<div class="overlay" id="task-modal">
+  <div class="modal">
+    <h3 id="task-modal-title">Add task</h3>
+    <div class="field"><label>Title</label><input type="text" id="t-title" placeholder="What needs doing?"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field"><label>Category</label>
+        <select id="t-cat"><option value="Operations">Operations</option><option value="Outreach">Outreach</option><option value="Programming">Programming</option></select>
+      </div>
+      <div class="field"><label>Owner</label>
+        <select id="t-owner"><option value="Carter">Carter</option><option value="Michelle">Michelle</option><option value="Matthew">Matthew</option><option value="All">All three</option></select>
+      </div>
+      <div class="field"><label>Priority</label>
+        <select id="t-priority"><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
+      </div>
+      <div class="field"><label>Status</label>
+        <select id="t-status"><option value="To do">To do</option><option value="In progress">In progress</option><option value="Done">Done</option><option value="Blocked">Blocked</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Due date</label><input type="date" id="t-due"></div>
+    <div class="field"><label>Notes</label><textarea id="t-notes" placeholder="Context, blockers, links…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeTaskModal()">Cancel</button>
+      <button class="btn btn-primary" id="task-save-btn" onclick="saveTask()"><i class="ti ti-check"></i> Save task</button>
+    </div>
+  </div>
+</div>
+
+<!-- Milestone modal -->
+<div class="overlay" id="ms-modal">
+  <div class="modal">
+    <h3>Add milestone</h3>
+    <div class="field"><label>Milestone</label><input type="text" id="ms-title" placeholder="e.g. Fall tutor training complete"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field"><label>Date</label><input type="date" id="ms-date"></div>
+      <div class="field"><label>Owner</label>
+        <select id="ms-owner"><option value="Carter">Carter</option><option value="Michelle">Michelle</option><option value="Matthew">Matthew</option><option value="All">All three</option></select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeMsModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMilestone()"><i class="ti ti-check"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log modal -->
+<div class="overlay" id="log-modal">
+  <div class="modal">
+    <h3>Add log entry</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field"><label>Date</label><input type="date" id="log-date"></div>
+      <div class="field"><label>Type</label>
+        <select id="log-type"><option value="Check-in">Weekly check-in</option><option value="Hours">Hours log</option><option value="Meeting note">Meeting note</option><option value="Note">General note</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Entry</label><textarea id="log-text" placeholder="What happened, what's next, hours worked…" style="height:90px"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeLogModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLog()"><i class="ti ti-check"></i> Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURATION — paste your Apps Script URL here
+// ============================================================
+const SCRIPT_URL = 'https://script.google.com/a/macros/nd.edu/s/AKfycbxKAib9SUJxOcx-FOlsDzJdKm4cpnB9QuD3urfrJknU_8TxX2IHqz8MoH-ShtrOPo4s3g/exec';
+// ============================================================
+
+const DEFAULT_TASKS = [
+  {id:'t1',title:'Set up WCOnline fall schedule and location hours',cat:'Operations',owner:'Carter',priority:'High',status:'To do',due:'2026-08-15',notes:'All 7 locations. Coordinate with Matthew on hours.',added:'2026-06-16',addedBy:'Michelle'},
+  {id:'t2',title:'Onboarding: review Writing Center mission and policies',cat:'Operations',owner:'Carter',priority:'High',status:'To do',due:'2026-08-05',notes:'Review with Michelle in first week.',added:'2026-06-16',addedBy:'Michelle'},
+  {id:'t3',title:'Draft fall tutor schedule and shift assignments',cat:'Operations',owner:'Carter',priority:'High',status:'To do',due:'2026-08-20',notes:'Coordinate with all tutor cohort leads.',added:'2026-06-16',addedBy:'Michelle'},
+  {id:'t4',title:'Update Writing Center website for fall',cat:'Outreach',owner:'Carter',priority:'Medium',status:'To do',due:'2026-08-25',notes:'Hours, locations, staff bios.',added:'2026-06-16',addedBy:'Michelle'},
+  {id:'t5',title:'Design fall outreach campaign and social media plan',cat:'Outreach',owner:'Carter',priority:'Medium',status:'To do',due:'2026-09-05',notes:'Coordinate timing with fall enrollment.',added:'2026-06-16',addedBy:'Michelle'},
+  {id:'t6',title:'Facilitate first fall tutor training session',cat:'Programming',owner:'Carter',priority:'High',status:'To do',due:'2026-08-28',notes:'Michelle and Matthew to co-plan agenda.',added:'2026-06-16',addedBy:'Michelle'},
+  {id:'t7',title:'Develop workshop on writing and AI for fall',cat:'Programming',owner:'Carter',priority:'Medium',status:'To do',due:'2026-09-20',notes:"Connects to Michelle's WR 13500 and Carter's research interests.",added:'2026-06-16',addedBy:'Michelle'},
+  {id:'t8',title:'Weekly supervision meeting with Michelle',cat:'Operations',owner:'All',priority:'Medium',status:'To do',due:'2026-08-07',notes:'Recurring. Fridays preferred.',added:'2026-06-16',addedBy:'Michelle'},
+  {id:'t9',title:'Transition documentation from Maggie Su handoff',cat:'Operations',owner:'Michelle',priority:'High',status:'To do',due:'2026-07-15',notes:'Review outstanding WC processes, files, contacts.',added:'2026-06-16',addedBy:'Michelle'},
+  {id:'t10',title:'Send Carter offer letter and onboarding materials',cat:'Operations',owner:'Michelle',priority:'High',status:'In progress',due:'2026-07-01',notes:'',added:'2026-06-16',addedBy:'Michelle'},
+];
+const DEFAULT_MILESTONES = [
+  {id:'m1',title:'Carter start date',date:'2026-08-01',owner:'All'},
+  {id:'m2',title:'Fall tutor training complete',date:'2026-08-29',owner:'Carter'},
+  {id:'m3',title:'Fall semester opens',date:'2026-09-02',owner:'All'},
+  {id:'m4',title:'Mid-year check-in / performance review',date:'2026-12-15',owner:'Michelle'},
+  {id:'m5',title:'Spring semester opens',date:'2027-01-13',owner:'All'},
+  {id:'m6',title:'Spring tutor training complete',date:'2027-01-15',owner:'Carter'},
+  {id:'m7',title:'Carter position ends',date:'2027-05-31',owner:'All'},
+];
+
+let currentUser = 'Michelle';
+let editingTaskId = null;
+let tasks = [], milestones = [], logs = [];
+let connected = false;
+
+function setStatus(state, msg) {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  dot.className = 'status-dot ' + state;
+  txt.textContent = msg;
+}
+
+async function api(params) {
+  const url = new URL(SCRIPT_URL);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, typeof v === 'object' ? JSON.stringify(v) : v));
+  const res = await fetch(url.toString(), {redirect:'follow'});
+  return res.json();
+}
+
+async function loadData() {
+  if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_DEPLOYMENT_URL_HERE') {
+    setStatus('err', 'No script URL set — using demo data');
+    tasks = DEFAULT_TASKS;
+    milestones = DEFAULT_MILESTONES;
+    logs = [];
+    renderAll();
+    return;
+  }
+  setStatus('loading', 'Loading…');
+  try {
+    const data = await api({action:'read'});
+    if (data.error) throw new Error(data.error);
+    tasks = data.tasks && data.tasks.length ? data.tasks : DEFAULT_TASKS;
+    milestones = data.milestones && data.milestones.length ? data.milestones : DEFAULT_MILESTONES;
+    logs = data.logs || [];
+    connected = true;
+    setStatus('ok', 'Connected — Google Sheets');
+    renderAll();
+  } catch(e) {
+    setStatus('err', 'Could not connect — using demo data');
+    tasks = DEFAULT_TASKS; milestones = DEFAULT_MILESTONES; logs = [];
+    renderAll();
+  }
+}
+
+function setUser(u) {
+  currentUser = u;
+  document.querySelectorAll('.who-btn').forEach(b => b.classList.toggle('active', b.dataset.who === u));
+}
+
+function switchTab(t) {
+  const names = ['dashboard','tasks','milestones','log'];
+  document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', names[i] === t));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + t).classList.add('active');
+  renderAll();
+}
+
+function catBadge(c) { return c==='Operations'?'b-ops':c==='Outreach'?'b-out':'b-prog'; }
+function statusBadge(s) { return s==='To do'?'b-todo':s==='In progress'?'b-inprog':s==='Done'?'b-done':'b-blocked'; }
+function ownerBadge(o) { return o==='Carter'?'b-carter':o==='Michelle'?'b-michelle':o==='Matthew'?'b-matthew':'b-all'; }
+function dotClass(p) { return p==='High'?'dot-high':p==='Medium'?'dot-med':'dot-low'; }
+
+function fmtDate(d) {
+  if (!d) return '';
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'});
+}
+function dueClass(d) {
+  if (!d) return '';
+  const diff = (new Date(d) - new Date()) / 86400000;
+  return diff < 0 ? 'overdue' : diff < 14 ? 'soon' : '';
+}
+
+function renderDashboard() {
+  const done = tasks.filter(t=>t.status==='Done').length;
+  const inprog = tasks.filter(t=>t.status==='In progress').length;
+  const blocked = tasks.filter(t=>t.status==='Blocked').length;
+  const high = tasks.filter(t=>t.priority==='High'&&t.status!=='Done').length;
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric"><div class="metric-num">${tasks.length}</div><div class="metric-label">Total tasks</div></div>
+    <div class="metric"><div class="metric-num" style="color:var(--green)">${done}</div><div class="metric-label">Done</div></div>
+    <div class="metric"><div class="metric-num" style="color:var(--purple)">${inprog}</div><div class="metric-label">In progress</div></div>
+    <div class="metric"><div class="metric-num" style="color:var(--red)">${blocked}</div><div class="metric-label">Blocked</div></div>
+    <div class="metric"><div class="metric-num" style="color:#E24B4A">${high}</div><div class="metric-label">High priority open</div></div>
+  `;
+  const start = new Date('2026-08-01'), end = new Date('2027-05-31'), now = new Date();
+  const pct = Math.max(0, Math.min(100, Math.round((now-start)/(end-start)*100)));
+  document.getElementById('tl-fill').style.width = pct + '%';
+
+  const upcoming = [...tasks].filter(t=>t.due&&t.status!=='Done')
+    .sort((a,b)=>new Date(a.due)-new Date(b.due)).slice(0,5);
+  document.getElementById('upcoming').innerHTML = upcoming.length ? upcoming.map(t=>`
+    <div class="card">
+      <div class="card-top">
+        <div class="dot ${dotClass(t.priority)}" style="margin-top:5px"></div>
+        <div class="card-title">${t.title}</div>
+      </div>
+      <div class="card-meta">
+        <span class="badge ${ownerBadge(t.owner)}">${t.owner}</span>
+        <span class="badge ${catBadge(t.cat)}">${t.cat}</span>
+        <span class="due ${dueClass(t.due)}"><i class="ti ti-calendar" style="font-size:11px"></i> ${fmtDate(t.due)}</span>
+      </div>
+    </div>`).join('') : '<div class="empty">No upcoming tasks.</div>';
+
+  const recent = [...logs].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,4);
+  document.getElementById('recent-activity').innerHTML = recent.length ? recent.map(l=>`
+    <div class="log-entry">
+      <div class="log-header">
+        <span class="log-author">${l.addedBy}</span>
+        <span class="badge ${ownerBadge(l.addedBy)}">${l.type}</span>
+        <span class="due">${fmtDate(l.date)}</span>
+      </div>
+      <div class="log-text">${l.text}</div>
+    </div>`).join('') : '<div class="empty">No log entries yet.</div>';
+}
+
+function renderTasks() {
+  const fs = document.getElementById('f-status').value;
+  const fo = document.getElementById('f-owner').value;
+  const fc = document.getElementById('f-cat').value;
+  let filtered = tasks.filter(t =>
+    (!fs || t.status===fs) && (!fo || t.owner===fo) && (!fc || t.cat===fc)
+  );
+  filtered.sort((a,b)=>{
+    const p={High:0,Medium:1,Low:2};
+    return (p[a.priority]||1)-(p[b.priority]||1) || (new Date(a.due||'9999')-new Date(b.due||'9999'));
+  });
+  document.getElementById('task-list').innerHTML = filtered.length ? filtered.map(t=>`
+    <div class="card" id="tc-${t.id}">
+      <div class="card-top">
+        <div class="dot ${dotClass(t.priority)}" style="margin-top:5px" title="${t.priority} priority"></div>
+        <div class="card-title">${t.title}</div>
+      </div>
+      <div class="card-meta">
+        <span class="badge ${statusBadge(t.status)}">${t.status}</span>
+        <span class="badge ${ownerBadge(t.owner)}">${t.owner}</span>
+        <span class="badge ${catBadge(t.cat)}">${t.cat}</span>
+        ${t.due?`<span class="due ${dueClass(t.due)}"><i class="ti ti-calendar" style="font-size:11px"></i> ${fmtDate(t.due)}</span>`:''}
+      </div>
+      ${t.notes?`<div class="card-notes">${t.notes}</div>`:''}
+      <div class="card-actions">
+        <select class="status-select" onchange="updateStatus('${t.id}',this.value)" style="font-size:11px;padding:3px 8px;border-radius:20px;border:1px solid var(--border2)">
+          <option value="">Change status…</option>
+          <option value="To do">To do</option>
+          <option value="In progress">In progress</option>
+          <option value="Done">Done</option>
+          <option value="Blocked">Blocked</option>
+        </select>
+        <button class="btn btn-sm" onclick="editTask('${t.id}')"><i class="ti ti-edit"></i> Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`).join('') : '<div class="empty">No tasks match this filter.</div>';
+}
+
+function renderMilestones() {
+  const sorted = [...milestones].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  document.getElementById('ms-list').innerHTML = sorted.length ? sorted.map(m=>{
+    const past = new Date(m.date+'T00:00:00') < new Date();
+    return `<div class="ms-row">
+      <span class="ms-date">${fmtDate(m.date)}</span>
+      <i class="ti ti-${past?'circle-check':'flag-2'} ms-icon" style="color:${past?'var(--green)':'var(--purple)'}"></i>
+      <span class="ms-title ${past?'past':''}">${m.title}</span>
+      <span class="badge ${ownerBadge(m.owner)}">${m.owner}</span>
+      <button class="btn btn-sm btn-danger" onclick="deleteMilestone('${m.id}')"><i class="ti ti-trash"></i></button>
+    </div>`;
+  }).join('') : '<div class="empty">No milestones.</div>';
+}
+
+function renderLog() {
+  const sorted = [...logs].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('log-list').innerHTML = sorted.length ? sorted.map(l=>`
+    <div class="log-entry">
+      <div class="log-header">
+        <span class="log-author">${l.addedBy}</span>
+        <span class="badge ${ownerBadge(l.addedBy)}">${l.type}</span>
+        <span class="due">${fmtDate(l.date)}</span>
+        <button class="btn btn-sm btn-danger" onclick="deleteLog('${l.id}')" style="margin-left:auto"><i class="ti ti-trash"></i></button>
+      </div>
+      <div class="log-text">${l.text}</div>
+    </div>`).join('') : '<div class="empty">No log entries yet.</div>';
+}
+
+function renderAll() { renderDashboard(); renderTasks(); renderMilestones(); renderLog(); }
+
+async function updateStatus(id, val) {
+  if (!val) return;
+  const t = tasks.find(x=>x.id===id);
+  if (!t) return;
+  t.status = val;
+  await pushTask(t);
+  await pushLog({id:'l'+Date.now(), date:today(), type:'Note', text:`Marked "${t.title}" as ${val}`, addedBy:currentUser});
+  renderAll();
+}
+
+async function deleteTask(id) {
+  tasks = tasks.filter(t=>t.id!==id);
+  if (connected) await api({action:'deleteTask', id});
+  renderAll();
+}
+async function deleteMilestone(id) {
+  milestones = milestones.filter(m=>m.id!==id);
+  if (connected) await api({action:'deleteMilestone', id});
+  renderMilestones();
+}
+async function deleteLog(id) {
+  logs = logs.filter(l=>l.id!==id);
+  if (connected) await api({action:'deleteLog', id});
+  renderLog(); renderDashboard();
+}
+
+function today() { return new Date().toISOString().slice(0,10); }
+
+async function pushTask(t) {
+  if (connected) await api({action:'saveTask', data:t});
+}
+async function pushLog(entry) {
+  logs.push(entry);
+  if (connected) await api({action:'saveLog', data:entry});
+}
+
+// Task modal
+function openTaskModal(taskId) {
+  editingTaskId = taskId || null;
+  document.getElementById('task-modal-title').textContent = taskId ? 'Edit task' : 'Add task';
+  if (taskId) {
+    const t = tasks.find(x=>x.id===taskId);
+    document.getElementById('t-title').value = t.title;
+    document.getElementById('t-cat').value = t.cat;
+    document.getElementById('t-owner').value = t.owner;
+    document.getElementById('t-priority').value = t.priority;
+    document.getElementById('t-status').value = t.status;
+    document.getElementById('t-due').value = t.due || '';
+    document.getElementById('t-notes').value = t.notes || '';
+  } else {
+    document.getElementById('t-title').value = '';
+    document.getElementById('t-cat').value = 'Operations';
+    document.getElementById('t-owner').value = 'Carter';
+    document.getElementById('t-priority').value = 'Medium';
+    document.getElementById('t-status').value = 'To do';
+    document.getElementById('t-due').value = '';
+    document.getElementById('t-notes').value = '';
+  }
+  document.getElementById('task-modal').classList.add('open');
+  document.getElementById('t-title').focus();
+}
+function editTask(id) { openTaskModal(id); }
+function closeTaskModal() { document.getElementById('task-modal').classList.remove('open'); editingTaskId = null; }
+
+async function saveTask() {
+  const title = document.getElementById('t-title').value.trim();
+  if (!title) { document.getElementById('t-title').focus(); return; }
+  const btn = document.getElementById('task-save-btn');
+  btn.innerHTML = '<span class="spinner"></span> Saving…';
+  btn.disabled = true;
+  const t = {
+    id: editingTaskId || 't'+Date.now(),
+    title, cat:document.getElementById('t-cat').value,
+    owner:document.getElementById('t-owner').value,
+    priority:document.getElementById('t-priority').value,
+    status:document.getElementById('t-status').value,
+    due:document.getElementById('t-due').value,
+    notes:document.getElementById('t-notes').value,
+    added:today(), addedBy:currentUser
+  };
+  if (editingTaskId) {
+    const idx = tasks.findIndex(x=>x.id===editingTaskId);
+    if (idx>-1) tasks[idx] = t;
+  } else {
+    tasks.push(t);
+    await pushLog({id:'l'+Date.now(), date:today(), type:'Note', text:`Added task: "${title}"`, addedBy:currentUser});
+  }
+  await pushTask(t);
+  btn.innerHTML = '<i class="ti ti-check"></i> Save task';
+  btn.disabled = false;
+  closeTaskModal();
+  renderAll();
+}
+
+// Milestone modal
+function openMsModal() {
+  document.getElementById('ms-title').value = '';
+  document.getElementById('ms-date').value = '';
+  document.getElementById('ms-modal').classList.add('open');
+  document.getElementById('ms-title').focus();
+}
+function closeMsModal() { document.getElementById('ms-modal').classList.remove('open'); }
+async function saveMilestone() {
+  const title = document.getElementById('ms-title').value.trim();
+  const date = document.getElementById('ms-date').value;
+  if (!title || !date) return;
+  const ms = {id:'m'+Date.now(), title, date, owner:document.getElementById('ms-owner').value};
+  milestones.push(ms);
+  if (connected) await api({action:'saveMilestone', data:ms});
+  closeMsModal(); renderMilestones();
+}
+
+// Log modal
+function openLogModal() {
+  document.getElementById('log-date').value = today();
+  document.getElementById('log-text').value = '';
+  document.getElementById('log-modal').classList.add('open');
+  document.getElementById('log-text').focus();
+}
+function closeLogModal() { document.getElementById('log-modal').classList.remove('open'); }
+async function saveLog() {
+  const text = document.getElementById('log-text').value.trim();
+  if (!text) return;
+  const entry = {
+    id:'l'+Date.now(), date:document.getElementById('log-date').value,
+    type:document.getElementById('log-type').value, text, addedBy:currentUser
+  };
+  await pushLog(entry);
+  closeLogModal(); renderLog(); renderDashboard();
+}
+
+// Close modals on overlay click
+['task-modal','ms-modal','log-modal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click', function(e){ if(e.target===this) this.classList.remove('open'); });
+});
+
+loadData();
+</script>
+</body>
+</html>
