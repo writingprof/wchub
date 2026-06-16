@@ -141,6 +141,7 @@
       <div class="status-bar" id="status-bar">
         <div class="status-dot loading" id="status-dot"></div>
         <span id="status-text">Connecting…</span>
+        <button onclick="refreshData()" id="refresh-btn" title="Refresh data" style="background:none;border:none;cursor:pointer;padding:0;margin-left:2px;color:var(--text3);display:flex;align-items:center;font-size:14px"><i class="ti ti-refresh" id="refresh-icon"></i></button>
       </div>
     </div>
   </div>
@@ -285,7 +286,7 @@
 // ============================================================
 // CONFIGURATION — paste your Apps Script URL here
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/a/macros/nd.edu/s/AKfycbxKAib9SUJxOcx-FOlsDzJdKm4cpnB9QuD3urfrJknU_8TxX2IHqz8MoH-ShtrOPo4s3g/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKAib9SUJxOcx-FOlsDzJdKm4cpnB9QuD3urfrJknU_8TxX2IHqz8MoH-ShtrOPo4s3g/exec';
 // ============================================================
 
 const DEFAULT_TASKS = [
@@ -630,6 +631,13 @@ async function saveLog() {
 ['task-modal','ms-modal','log-modal'].forEach(id=>{
   document.getElementById(id).addEventListener('click', function(e){ if(e.target===this) this.classList.remove('open'); });
 });
+
+async function refreshData() {
+  const icon = document.getElementById('refresh-icon');
+  icon.style.animation = 'spin .7s linear infinite';
+  await loadData();
+  icon.style.animation = '';
+}
 
 loadData();
 </script>
