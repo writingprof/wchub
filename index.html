@@ -480,7 +480,7 @@ async function api(params) {
 }
 
 async function loadData() {
-  if (SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbxKAib9SUJxOcx-FOlsDzJdKm4cpnB9QuD3urfrJknU_8TxX2IHqz8MoH-ShtrOPo4s3g/exec') {
+ if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_DEPLOYMENT_URL_HERE') {
     setStatus('err', 'No script URL — using demo data');
     tasks = DEFAULT_TASKS; milestones = DEFAULT_MILESTONES; logs = [];
     renderAll(); return;
