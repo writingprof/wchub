@@ -72,6 +72,11 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
 .card-title{font-size:13px;font-weight:500;color:var(--text);flex:1;line-height:1.45}
 .card-meta{display:flex;align-items:center;gap:6px;margin-top:7px;flex-wrap:wrap}
 .card-dates{display:flex;gap:12px;margin-top:5px;flex-wrap:wrap}
+.card-date-group{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;margin-left:8px}
+.date-chip{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px;white-space:nowrap}
+.date-chip.overdue{color:var(--red);font-weight:500}
+.date-chip.soon{color:var(--amber-dark);font-weight:500}
+.date-chip-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
 .card-notes{font-size:12px;color:var(--text2);margin-top:7px;line-height:1.55;border-top:1px solid var(--border);padding-top:7px}
 .card-actions{display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap}
 .badge{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:400;white-space:nowrap}
@@ -142,6 +147,29 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--michelle);border-radius:50%;animation:spin .7s linear infinite}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+/* Calendar - Gantt style */
+.cal-wrap{width:100%;overflow-x:auto}
+.cal-header-row{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:2px solid var(--border)}
+.cal-header-cell{font-size:11px;font-weight:600;color:var(--text2);text-align:center;padding:6px 0}
+.cal-week-row{display:grid;grid-template-columns:repeat(7,1fr);position:relative;border-bottom:1px solid var(--border)}
+.cal-week-row:last-child{border-bottom:none}
+.cal-day-cell{border-right:1px solid var(--border);min-height:28px;position:relative}
+.cal-day-cell:last-child{border-right:none}
+.cal-day-num{font-size:10px;color:var(--text3);padding:2px 4px;line-height:1;position:relative;z-index:2}
+.cal-day-num.is-today{background:var(--michelle);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;margin:2px}
+.cal-day-cell.other-month{background:var(--bg2)}
+.cal-bars-layer{position:relative;padding:0 0 4px 0}
+.cal-gantt-bar{position:relative;height:18px;margin:1px 0;border-radius:3px;display:flex;align-items:center;font-size:10px;font-weight:600;padding:0 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default;box-sizing:border-box}
+.cal-gantt-bar.owner-michelle{background:var(--michelle-light);color:var(--michelle-dark);border-left:3px solid var(--michelle)}
+.cal-gantt-bar.owner-matthew{background:var(--matthew-light);color:var(--matthew-dark);border-left:3px solid var(--matthew)}
+.cal-gantt-bar.owner-carter{background:var(--carter-light);color:var(--carter-dark);border-left:3px solid var(--carter)}
+.cal-gantt-bar.owner-all{background:var(--gray-light);color:var(--gray);border-left:3px solid var(--gray)}
+.cal-gantt-bar.continues-left{border-left:none;border-radius:0 3px 3px 0}
+.cal-gantt-bar.continues-right{border-radius:3px 0 0 3px}
+.cal-gantt-bar.continues-both{border-left:none;border-radius:0}
+.cal-milestone-dot{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;border:2px solid var(--bg)}
+.cal-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+.cal-legend-swatch{width:14px;height:10px;border-radius:2px}
 </style>
 </head>
 <body>
@@ -170,6 +198,7 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
       <button class="tab" onclick="switchTab('tasks')">Tasks</button>
       <button class="tab" onclick="switchTab('milestones')">Milestones</button>
       <button class="tab" onclick="switchTab('log')">Weekly log</button>
+      <button class="tab" onclick="switchTab('calendar')">Calendar</button>
     </div>
   </div>
 
@@ -248,6 +277,20 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
       <button class="btn btn-primary btn-sm" onclick="openLogModal()">+ Add entry</button>
     </div>
     <div id="log-list"></div>
+  </div>
+
+  <div id="panel-calendar" class="panel">
+    <div class="section-head">
+      <h2>Calendar</h2>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn btn-sm" onclick="calNav(-1)">‹ Prev</button>
+        <select id="cal-month-select" onchange="calJump()" style="font-size:12px;padding:5px 8px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);font-family:'Inter',sans-serif"></select>
+        <button class="btn btn-sm" onclick="calNav(1)">Next ›</button>
+      </div>
+    </div>
+    <div id="cal-legend" style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap"></div>
+    <div id="cal-grid"></div>
+    <div id="cal-nodate" style="margin-top:1.5rem"></div>
   </div>
 </div>
 
@@ -513,7 +556,7 @@ function setUser(u) {
 }
 
 function switchTab(t) {
-  const names = ['dashboard','tasks','milestones','log'];
+  const names = ['dashboard','tasks','milestones','log','calendar'];
   document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', names[i]===t));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-'+t).classList.add('active');
@@ -573,19 +616,19 @@ function today() { return new Date().toISOString().slice(0,10); }
 
 function taskCard(t) {
   const dimmed = (t.status==='Done'||t.status==='Dropped') ? ' dimmed' : '';
-  const startStr = t.start ? `<span class="due-tag"><span class="date-label">Start</span>${fmtDate(t.start)}</span>` : '';
-  const dueStr = t.due ? `<span class="due-tag ${dueClass(t.due)}"><span class="date-label">Due</span>${fmtDate(t.due)}</span>` : '';
+  const startStr = t.start ? `<span class="date-chip"><span class="date-chip-label">Start</span>${fmtDate(t.start)}</span>` : '';
+  const dueStr = t.due ? `<span class="date-chip ${dueClass(t.due)}"><span class="date-chip-label">Due</span>${fmtDate(t.due)}</span>` : '';
   return `<div class="card${dimmed}" id="tc-${t.id}">
     <div class="card-top">
       <div class="dot ${dotClass(t.priority)}" title="${t.priority} priority"></div>
       <div class="card-title">${t.title}</div>
+      ${(startStr||dueStr) ? `<div class="card-date-group">${startStr}${dueStr}</div>` : ''}
     </div>
     <div class="card-meta">
       <span class="badge ${statusBadge(t.status)}">${t.status}</span>
       <span class="badge ${ownerBadge(t.owner)}">${t.owner}</span>
       <span class="badge ${catBadge(t.cat)}">${t.cat}</span>
     </div>
-    ${(startStr||dueStr) ? `<div class="card-dates">${startStr}${dueStr}</div>` : ''}
     ${t.notes ? `<div class="card-notes">${t.notes}</div>` : ''}
     <div class="card-actions">
       <select onchange="updateStatus('${t.id}',this.value)" style="font-size:11px;padding:3px 8px;border-radius:20px;border:1px solid var(--border2)">
@@ -730,7 +773,238 @@ function renderLog() {
     </div>`).join('') : '<div class="empty">No log entries yet.</div>';
 }
 
-function renderAll() { renderDashboard(); renderTasks(); renderMilestones(); renderLog(); }
+// ── Calendar ──────────────────────────────────────────────
+const AY_MONTHS = [
+  {y:2026,m:6},{y:2026,m:7},{y:2026,m:8},{y:2026,m:9},
+  {y:2026,m:10},{y:2026,m:11},{y:2026,m:12},
+  {y:2027,m:0},{y:2027,m:1},{y:2027,m:2},{y:2027,m:3},{y:2027,m:4}
+];
+let calIdx = 2; // default to August 2026
+
+function buildCalMonthSelect() {
+  const sel = document.getElementById('cal-month-select');
+  if (!sel || sel.options.length > 0) return;
+  AY_MONTHS.forEach((mo,i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = MONTHS[mo.m] + ' ' + mo.y;
+    sel.appendChild(opt);
+  });
+  sel.value = calIdx;
+}
+
+function calNav(dir) {
+  calIdx = Math.max(0, Math.min(AY_MONTHS.length-1, calIdx+dir));
+  document.getElementById('cal-month-select').value = calIdx;
+  renderCalendar();
+}
+
+function calJump() {
+  calIdx = parseInt(document.getElementById('cal-month-select').value);
+  renderCalendar();
+}
+
+function ownerColor(o) {
+  if (o==='Michelle') return 'owner-michelle';
+  if (o==='Matthew')  return 'owner-matthew';
+  if (o==='Carter')   return 'owner-carter';
+  return 'owner-all';
+}
+
+function renderCalendar() {
+  buildCalMonthSelect();
+  const {y, m} = AY_MONTHS[calIdx];
+  const todayStr = today();
+  const firstDay = new Date(y, m, 1);
+  const lastDate = new Date(y, m+1, 0).getDate();
+  const monthStart = new Date(y, m, 1);
+  const monthEnd   = new Date(y, m+1, 0, 23, 59, 59);
+
+  // Filter tasks
+  const filtered = applyFilters(tasks).filter(t => t.status !== 'Dropped');
+  const inMonth = filtered.filter(t => {
+    const s = t.start ? new Date(t.start+'T00:00:00') : null;
+    const d = t.due   ? new Date(t.due+'T00:00:00')   : null;
+    if (!s && !d) return false;
+    const effectiveStart = s || d;
+    const effectiveEnd   = d || s;
+    return effectiveStart <= monthEnd && effectiveEnd >= monthStart;
+  });
+  const noDate = filtered.filter(t => !t.start && !t.due);
+
+  // Milestones in this month
+  const msMo = milestones.filter(ms => {
+    const d = new Date(ms.date+'T00:00:00');
+    return d >= monthStart && d <= monthEnd;
+  });
+
+  // Build weeks array: each week is array of 7 {dateStr, dayNum, otherMonth}
+  const weeks = [];
+  let week = [];
+  const startPad = firstDay.getDay(); // 0=Sun
+  for (let i=0; i<startPad; i++) {
+    const d = new Date(y, m, 1-startPad+i);
+    week.push({dateStr: d.toISOString().slice(0,10), dayNum: d.getDate(), otherMonth: true});
+  }
+  for (let d=1; d<=lastDate; d++) {
+    const dt = new Date(y, m, d);
+    week.push({dateStr: `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`, dayNum: d, otherMonth: false});
+    if (week.length === 7) { weeks.push(week); week = []; }
+  }
+  if (week.length > 0) {
+    while (week.length < 7) {
+      const last = new Date(week[week.length-1].dateStr+'T00:00:00');
+      last.setDate(last.getDate()+1);
+      week.push({dateStr: last.toISOString().slice(0,10), dayNum: last.getDate(), otherMonth: true});
+    }
+    weeks.push(week);
+  }
+
+  // For each task, assign a "lane" (row index) so bars don't overlap
+  // Lane assignment per week
+  function dateToIdx(dateStr, weekDays) {
+    return weekDays.findIndex(wd => wd.dateStr === dateStr);
+  }
+
+  // Assign global lanes to tasks (consistent across weeks)
+  const lanes = {};
+  const sortedTasks = [...inMonth].sort((a,b) => {
+    const as = a.start||a.due||'9999'; const bs = b.start||b.due||'9999';
+    return as.localeCompare(bs);
+  });
+  sortedTasks.forEach(t => {
+    const taken = new Set(Object.values(lanes));
+    // find conflicts: tasks whose ranges overlap with this one
+    const ts = t.start||t.due; const te = t.due||t.start;
+    const usedLanes = new Set();
+    sortedTasks.forEach(other => {
+      if (other.id === t.id || lanes[other.id] === undefined) return;
+      const os = other.start||other.due; const oe = other.due||other.start;
+      if (ts <= oe && te >= os) usedLanes.add(lanes[other.id]);
+    });
+    let lane = 0;
+    while (usedLanes.has(lane)) lane++;
+    lanes[t.id] = lane;
+  });
+
+  const maxLane = Math.max(0, ...Object.values(lanes)) + 1;
+  const BAR_H = 20; // px per lane
+  const DAY_H = 22; // day number row height
+
+  // Build HTML
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html = `<div class="cal-wrap">`;
+  html += `<div class="cal-header-row">`;
+  DAYS.forEach(d => { html += `<div class="cal-header-cell">${d}</div>`; });
+  html += `</div>`;
+
+  weeks.forEach(weekDays => {
+    const weekHeight = DAY_H + maxLane * BAR_H + 6;
+    html += `<div class="cal-week-row" style="height:${weekHeight}px">`;
+
+    // Day number cells (background grid)
+    weekDays.forEach(wd => {
+      const isToday = wd.dateStr === todayStr;
+      html += `<div class="cal-day-cell${wd.otherMonth?' other-month':''}">`;
+      if (isToday) {
+        html += `<div class="cal-day-num is-today">${wd.dayNum}</div>`;
+      } else {
+        html += `<div class="cal-day-num">${wd.dayNum}</div>`;
+      }
+      html += `</div>`;
+    });
+
+    // Bars layer — absolutely positioned over the week row
+    html += `<div style="position:absolute;top:${DAY_H}px;left:0;right:0;bottom:0;pointer-events:none">`;
+
+    const weekStartStr = weekDays[0].dateStr;
+    const weekEndStr   = weekDays[6].dateStr;
+
+    inMonth.forEach(t => {
+      const ts = t.start||t.due; const te = t.due||t.start;
+      if (!ts || !te) return;
+      // Does this task touch this week?
+      if (ts > weekEndStr || te < weekStartStr) return;
+
+      const clampStart = ts < weekStartStr ? weekStartStr : ts;
+      const clampEnd   = te > weekEndStr   ? weekEndStr   : te;
+
+      const startCol = weekDays.findIndex(wd => wd.dateStr === clampStart);
+      const endCol   = weekDays.findIndex(wd => wd.dateStr === clampEnd);
+      if (startCol < 0 || endCol < 0) return;
+
+      const colW = 100/7;
+      const left = startCol * colW;
+      const width = (endCol - startCol + 1) * colW;
+      const lane = lanes[t.id] || 0;
+      const top = lane * BAR_H;
+
+      const continuesLeft  = ts < weekStartStr;
+      const continuesRight = te > weekEndStr;
+      let radiusClass = '';
+      if (continuesLeft && continuesRight) radiusClass = 'continues-both';
+      else if (continuesLeft)  radiusClass = 'continues-left';
+      else if (continuesRight) radiusClass = 'continues-right';
+
+      const showLabel = !continuesLeft; // only show title on first segment
+      const label = showLabel ? (t.title.length > 28 ? t.title.slice(0,28)+'…' : t.title) : '';
+
+      html += `<div class="cal-gantt-bar ${ownerColor(t.owner)} ${radiusClass}"
+        style="position:absolute;left:calc(${left}% + 1px);width:calc(${width}% - 2px);top:${top}px"
+        title="${t.title} (${t.owner}${t.due?' · Due '+fmtDate(t.due):''})">${label}</div>`;
+    });
+
+    // Milestone dots
+    msMo.forEach(ms => {
+      const idx = weekDays.findIndex(wd => wd.dateStr === ms.date);
+      if (idx < 0) return;
+      const colW = 100/7;
+      const left = idx * colW + colW/2;
+      html += `<div style="position:absolute;left:calc(${left}% - 5px);bottom:4px;width:10px;height:10px;border-radius:50%;background:var(--amber);border:2px solid var(--bg);z-index:3" title="Milestone: ${ms.title}"></div>`;
+    });
+
+    html += `</div>`; // bars layer
+    html += `</div>`; // week row
+  });
+
+  html += `</div>`; // cal-wrap
+  document.getElementById('cal-grid').innerHTML = html;
+
+  // Legend
+  const owners = [...new Set(inMonth.map(t=>t.owner))];
+  const legendColors = {
+    Michelle:['var(--michelle-light)','var(--michelle)'],
+    Matthew:['var(--matthew-light)','var(--matthew)'],
+    Carter:['var(--carter-light)','var(--carter)'],
+    All:['var(--gray-light)','var(--gray)']
+  };
+  let legend = owners.map(o => {
+    const c = legendColors[o] || legendColors['All'];
+    return `<div class="cal-legend-item"><div class="cal-legend-swatch" style="background:${c[0]};border-left:3px solid ${c[1]}"></div>${o}</div>`;
+  }).join('');
+  if (msMo.length) legend += `<div class="cal-legend-item"><div style="width:10px;height:10px;border-radius:50%;background:var(--amber);border:2px solid var(--bg2)"></div>Milestone</div>`;
+  document.getElementById('cal-legend').innerHTML = legend;
+
+  // No-date tasks
+  if (noDate.length) {
+    document.getElementById('cal-nodate').innerHTML = `
+      <div class="month-header" style="margin-top:1rem">Tasks with no dates <span class="month-count">${noDate.length}</span></div>
+      ${noDate.map(t=>`<div class="card" style="margin-bottom:6px">
+        <div class="card-top">
+          <div class="dot ${dotClass(t.priority)}"></div>
+          <div class="card-title">${t.title}</div>
+        </div>
+        <div class="card-meta">
+          <span class="badge ${ownerBadge(t.owner)}">${t.owner}</span>
+          <span class="badge ${catBadge(t.cat)}">${t.cat}</span>
+        </div>
+      </div>`).join('')}`;
+  } else {
+    document.getElementById('cal-nodate').innerHTML = '';
+  }
+}
+
+function renderAll() { renderDashboard(); renderTasks(); renderMilestones(); renderLog(); renderCalendar(); }
 
 async function updateStatus(id, val) {
   if (!val) return;
@@ -917,6 +1191,7 @@ async function saveLog() {
   document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 });
 
+buildCalMonthSelect();
 loadData();
 </script>
 </body>
