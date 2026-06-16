@@ -6,7 +6,7 @@
 <title>Writing Center Hub — AY 2026–27</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css">
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -142,12 +142,16 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--michelle);border-radius:50%;animation:spin .7s linear infinite}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;font-size:13px;padding:10px 18px;border-radius:var(--radius-lg);display:flex;align-items:center;gap:12px;z-index:500;box-shadow:0 4px 16px rgba(0,0,0,0.2);transition:opacity .3s}
+.toast.hidden{opacity:0;pointer-events:none}
+.toast-undo{font-size:12px;color:#7EDDB8;cursor:pointer;font-weight:600;border:none;background:none;padding:0;font-family:'Inter',sans-serif}
+.toast-undo:hover{color:#fff}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
-    <h1><i class="ti ti-writing"></i> Writing Center Hub — AY 2026–27</h1>
+    <h1>✍ Writing Center Hub — AY 2026–27</h1>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <div class="who-group">
         <span class="who-label">Viewing as:</span>
@@ -158,17 +162,17 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
       <div class="status-bar" id="status-bar">
         <div class="status-dot loading" id="status-dot"></div>
         <span id="status-text">Connecting…</span>
-        <button onclick="refreshData()" title="Refresh" style="background:none;border:none;cursor:pointer;padding:0;margin-left:2px;color:var(--text3);display:flex;align-items:center;font-size:14px"><i class="ti ti-refresh" id="refresh-icon"></i></button>
+        <button onclick="refreshData()" title="Refresh" style="background:none;border:none;cursor:pointer;padding:0;margin-left:2px;color:var(--text3);font-size:15px;line-height:1" id="refresh-icon">↻</button>
       </div>
     </div>
   </div>
 
   <div style="background:var(--bg);border-radius:var(--radius-lg) var(--radius-lg) 0 0;border:1px solid var(--border);border-bottom:none">
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</button>
-      <button class="tab" onclick="switchTab('tasks')"><i class="ti ti-checklist"></i> Tasks</button>
-      <button class="tab" onclick="switchTab('milestones')"><i class="ti ti-flag"></i> Milestones</button>
-      <button class="tab" onclick="switchTab('log')"><i class="ti ti-notes"></i> Weekly log</button>
+      <button class="tab active" onclick="switchTab('dashboard')">Dashboard</button>
+      <button class="tab" onclick="switchTab('tasks')">Tasks</button>
+      <button class="tab" onclick="switchTab('milestones')">Milestones</button>
+      <button class="tab" onclick="switchTab('log')">Weekly log</button>
     </div>
   </div>
 
@@ -188,7 +192,7 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
   <div id="panel-tasks" class="panel">
     <div class="section-head">
       <h2>Tasks</h2>
-      <button class="btn btn-primary btn-sm" onclick="openTaskModal()"><i class="ti ti-plus"></i> Add task</button>
+      <button class="btn btn-primary btn-sm" onclick="openTaskModal()">+ Add task</button>
     </div>
     <div class="filters">
       <div class="view-toggle">
@@ -221,7 +225,7 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
         <option value="Field">Field</option>
         <option value="Tutors">Tutors</option>
       </select>
-      <button class="btn btn-sm" id="mytasks-btn" onclick="toggleMyTasks()"><i class="ti ti-user"></i> My tasks</button>
+      <button class="btn btn-sm" id="mytasks-btn" onclick="toggleMyTasks()">◉ My tasks</button>
     </div>
     <div id="mytasks-bar" style="display:none" class="mytasks-bar">
       <span>Showing tasks for <strong id="mytasks-name"></strong></span>
@@ -233,7 +237,7 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
   <div id="panel-milestones" class="panel">
     <div class="section-head">
       <h2>Key milestones</h2>
-      <button class="btn btn-primary btn-sm" onclick="openMsModal()"><i class="ti ti-plus"></i> Add milestone</button>
+      <button class="btn btn-primary btn-sm" onclick="openMsModal()">+ Add milestone</button>
     </div>
     <div id="ms-list"></div>
   </div>
@@ -244,7 +248,7 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
         <h2>Weekly log</h2>
         <p>Check-ins, supervision notes, hours.</p>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="openLogModal()"><i class="ti ti-plus"></i> Add entry</button>
+      <button class="btn btn-primary btn-sm" onclick="openLogModal()">+ Add entry</button>
     </div>
     <div id="log-list"></div>
   </div>
@@ -300,7 +304,7 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
     <div class="field"><label>Notes</label><textarea id="t-notes" placeholder="Context, sub-tasks, contacts, links…"></textarea></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeTaskModal()">Cancel</button>
-      <button class="btn btn-primary" id="task-save-btn" onclick="saveTask()"><i class="ti ti-check"></i> Save task</button>
+      <button class="btn btn-primary" id="task-save-btn" onclick="saveTask()">✓ Save task</button>
     </div>
   </div>
 </div>
@@ -323,7 +327,7 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
     </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeMsModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveMilestone()"><i class="ti ti-check"></i> Save</button>
+      <button class="btn btn-primary" onclick="saveMilestone()">✓ Save</button>
     </div>
   </div>
 </div>
@@ -346,9 +350,15 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
     <div class="field"><label>Entry</label><textarea id="log-text" placeholder="What happened, what's next, hours worked…" style="height:90px"></textarea></div>
     <div class="modal-actions">
       <button class="btn" onclick="closeLogModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveLog()"><i class="ti ti-check"></i> Save</button>
+      <button class="btn btn-primary" onclick="saveLog()">✓ Save</button>
     </div>
   </div>
+</div>
+
+<!-- Undo toast -->
+<div class="toast hidden" id="undo-toast">
+  <span id="undo-msg">Deleted</span>
+  <button class="toast-undo" onclick="undoDelete()">Undo</button>
 </div>
 
 <script>
@@ -480,7 +490,7 @@ async function api(params) {
 }
 
 async function loadData() {
- if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_DEPLOYMENT_URL_HERE') {
+  if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_APPS_SCRIPT_DEPLOYMENT_URL_HERE') {
     setStatus('err', 'No script URL — using demo data');
     tasks = DEFAULT_TASKS; milestones = DEFAULT_MILESTONES; logs = [];
     renderAll(); return;
@@ -503,10 +513,10 @@ async function loadData() {
 }
 
 async function refreshData() {
-  const icon = document.getElementById('refresh-icon');
-  icon.style.animation = 'spin .7s linear infinite';
+  const btn = document.getElementById('refresh-icon');
+  btn.style.animation = 'spin .7s linear infinite';
   await loadData();
-  icon.style.animation = '';
+  btn.style.animation = '';
 }
 
 function setUser(u) {
@@ -605,8 +615,8 @@ function taskCard(t) {
         <option value="Paused">Paused</option>
         <option value="Dropped">Dropped</option>
       </select>
-      <button class="btn btn-sm" onclick="editTask('${t.id}')"><i class="ti ti-edit"></i> Edit</button>
-      <button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')"><i class="ti ti-trash"></i></button>
+      <button class="btn btn-sm" onclick="editTask('${t.id}')">Edit</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')">×</button>
     </div>
   </div>`;
 }
@@ -650,7 +660,7 @@ function renderDashboard() {
         <div class="card-meta">
           <span class="badge ${ownerBadge(t.owner)}">${t.owner}</span>
           <span class="badge ${catBadge(t.cat)}">${t.cat}</span>
-          <span class="due-tag ${dueClass(t.due)}"><i class="ti ti-calendar" style="font-size:11px"></i> Due ${fmtDate(t.due)}</span>
+          <span class="due-tag ${dueClass(t.due)}">📅 Due ${fmtDate(t.due)}</span>
         </div>
       </div>`).join('')
     : '<div class="empty">Nothing due this week.</div>';
@@ -717,10 +727,10 @@ function renderMilestones() {
     const past = new Date(m.date+'T00:00:00') < new Date();
     return `<div class="ms-row">
       <span class="ms-date">${fmtDate(m.date)}</span>
-      <i class="ti ti-${past?'circle-check':'flag-2'} ms-icon" style="color:${past?'var(--green)':'var(--carter)'}"></i>
+      <span style="font-size:16px;flex-shrink:0;color:${past?'var(--green)':'var(--carter)'}">${past?'✓':'⚑'}</span>
       <span class="ms-title ${past?'past':''}">${m.title}</span>
       <span class="badge ${ownerBadge(m.owner)}">${m.owner}</span>
-      <button class="btn btn-sm btn-danger" onclick="deleteMilestone('${m.id}')"><i class="ti ti-trash"></i></button>
+      <button class="btn btn-sm btn-danger" onclick="deleteMilestone('${m.id}')">×</button>
     </div>`;
   }).join('') : '<div class="empty">No milestones.</div>';
 }
@@ -733,7 +743,7 @@ function renderLog() {
         <span class="log-author">${l.addedBy}</span>
         <span class="badge ${ownerBadge(l.addedBy)}">${l.type}</span>
         <span class="due-tag">${fmtDate(l.date)}</span>
-        <button class="btn btn-sm btn-danger" onclick="deleteLog('${l.id}')" style="margin-left:auto"><i class="ti ti-trash"></i></button>
+        <button class="btn btn-sm btn-danger" onclick="deleteLog('${l.id}')" style="margin-left:auto">×</button>
       </div>
       <div class="log-text">${l.text}</div>
     </div>`).join('') : '<div class="empty">No log entries yet.</div>';
@@ -751,20 +761,60 @@ async function updateStatus(id, val) {
   renderAll();
 }
 
+let undoStack = null;
+let undoTimer = null;
+
+function showToast(msg, type, item) {
+  undoStack = {type, item};
+  if (undoTimer) clearTimeout(undoTimer);
+  document.getElementById('undo-msg').textContent = msg;
+  const toast = document.getElementById('undo-toast');
+  toast.classList.remove('hidden');
+  undoTimer = setTimeout(() => {
+    toast.classList.add('hidden');
+    undoStack = null;
+  }, 5000);
+}
+
+async function undoDelete() {
+  if (!undoStack) return;
+  const {type, item} = undoStack;
+  undoStack = null;
+  document.getElementById('undo-toast').classList.add('hidden');
+  if (undoTimer) clearTimeout(undoTimer);
+  if (type==='task') {
+    tasks.push(item);
+    if (connected) await api({action:'saveTask', data:item});
+  } else if (type==='milestone') {
+    milestones.push(item);
+    if (connected) await api({action:'saveMilestone', data:item});
+  } else if (type==='log') {
+    logs.push(item);
+    if (connected) await api({action:'saveLog', data:item});
+  }
+  renderAll();
+}
+
 async function deleteTask(id) {
+  const item = tasks.find(t=>t.id===id);
   tasks = tasks.filter(t=>t.id!==id);
   if (connected) await api({action:'deleteTask',id});
   renderAll();
+  if (item) showToast(`Removed "${item.title.slice(0,40)}${item.title.length>40?'…':''}"`, 'task', item);
 }
 async function deleteMilestone(id) {
+  const item = milestones.find(m=>m.id===id);
   milestones = milestones.filter(m=>m.id!==id);
   if (connected) await api({action:'deleteMilestone',id});
   renderMilestones();
+  if (item) showToast(`Removed milestone "${item.title}"`, 'milestone', item);
 }
 async function deleteLog(id) {
+  const item = logs.find(l=>l.id===id);
   logs = logs.filter(l=>l.id!==id);
   if (connected) await api({action:'deleteLog',id});
   renderLog(); renderDashboard();
+  if (item) showToast('Log entry removed', 'log', item);
 }
 
 async function pushTask(t) { if (connected) await api({action:'saveTask',data:t}); }
@@ -825,7 +875,7 @@ async function saveTask() {
     await pushLog({id:'l'+Date.now(),date:today(),type:'Note',text:`Added task: "${title}"`,addedBy:currentUser});
   }
   await pushTask(t);
-  btn.innerHTML='<i class="ti ti-check"></i> Save task'; btn.disabled=false;
+  btn.innerHTML='✓ Save task'; btn.disabled=false;
   closeTaskModal(); renderAll();
 }
 
