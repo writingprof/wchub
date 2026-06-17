@@ -207,6 +207,11 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
 .more-menu button{display:block;width:100%;text-align:left;padding:8px 16px;font-size:13px;color:var(--text2);background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif}
 .more-menu button:hover{background:var(--bg2);color:var(--text)}
 .tab.more-active{color:var(--text);border-bottom-color:var(--text);font-weight:500}
+.owner-filter-wrap{position:relative}
+.owner-filter-btn{white-space:nowrap}
+.owner-dropdown{position:absolute;top:calc(100% + 4px);left:0;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:100;padding:8px 12px;min-width:140px;display:flex;flex-direction:column;gap:8px}
+.owner-dropdown label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer;white-space:nowrap}
+.owner-dropdown input[type=checkbox]{width:15px;height:15px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -286,24 +291,20 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
         <option value="Paused">Paused</option>
         <option value="Dropped">Dropped</option>
       </select>
-      <select id="f-owner" onchange="renderTasks()">
-        <option value="">All owners</option>
-        <option value="Carter">Carter</option>
-        <option value="Michelle">Michelle</option>
-        <option value="Matthew">Matthew</option>
-        <option value="All">All three</option>
-      </select>
+      <div class="owner-filter-wrap" id="task-owner-wrap">
+        <button class="btn btn-sm owner-filter-btn" onclick="toggleOwnerDropdown('task')" id="task-owner-btn">Showing: All ▾</button>
+        <div class="owner-dropdown" id="task-owner-dropdown" style="display:none">
+          <label><input type="checkbox" id="tf-michelle" checked onchange="updateOwnerFilter('task')"> <span style="color:var(--michelle-dark)">Michelle</span></label>
+          <label><input type="checkbox" id="tf-matthew" checked onchange="updateOwnerFilter('task')"> <span style="color:var(--matthew-dark)">Matthew</span></label>
+          <label><input type="checkbox" id="tf-carter" checked onchange="updateOwnerFilter('task')"> <span style="color:var(--carter-dark)">Carter</span></label>
+        </div>
+      </div>
       <select id="f-cat" onchange="renderTasks()">
         <option value="">All categories</option>
         <option value="Operations">Operations</option>
         <option value="Programming">Programming</option>
         <option value="Development">Development</option>
       </select>
-      <button class="btn btn-sm" id="mytasks-btn" onclick="toggleMyTasks()">◉ My tasks</button>
-    </div>
-    <div id="mytasks-bar" style="display:none" class="mytasks-bar">
-      <span>Showing tasks for <strong id="mytasks-name"></strong></span>
-      <button class="btn btn-sm" onclick="toggleMyTasks()">Clear</button>
     </div>
     <div id="task-list"></div>
   </div>
@@ -322,7 +323,14 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
   <div id="panel-progress" class="panel">
     <div class="section-head">
       <h2>In progress</h2>
-      <button class="btn btn-sm" id="prog-mytasks-btn" onclick="toggleProgMyTasks()">◉ My tasks</button>
+      <div class="owner-filter-wrap" id="prog-owner-wrap">
+        <button class="btn btn-sm owner-filter-btn" onclick="toggleOwnerDropdown('prog')" id="prog-owner-btn">Showing: All ▾</button>
+        <div class="owner-dropdown" id="prog-owner-dropdown" style="display:none">
+          <label><input type="checkbox" id="pf-michelle" checked onchange="updateOwnerFilter('prog')"> <span style="color:var(--michelle-dark)">Michelle</span></label>
+          <label><input type="checkbox" id="pf-matthew" checked onchange="updateOwnerFilter('prog')"> <span style="color:var(--matthew-dark)">Matthew</span></label>
+          <label><input type="checkbox" id="pf-carter" checked onchange="updateOwnerFilter('prog')"> <span style="color:var(--carter-dark)">Carter</span></label>
+        </div>
+      </div>
     </div>
     <div id="progress-active"></div>
     <hr class="divider">
@@ -791,7 +799,53 @@ function quickAddSubtask(taskId) {
   openSubtaskModal();
 }
 
-// ── Links ─────────────────────────────────────────────────
+// ── Owner filter dropdowns ────────────────────────────────
+function toggleOwnerDropdown(tab) {
+  const dd = document.getElementById(tab+'-owner-dropdown');
+  if (!dd) return;
+  const isOpen = dd.style.display !== 'none';
+  // Close all dropdowns first
+  ['task','prog'].forEach(t => {
+    const el = document.getElementById(t+'-owner-dropdown');
+    if (el) el.style.display = 'none';
+  });
+  if (!isOpen) dd.style.display = 'flex';
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('.owner-filter-wrap')) {
+    ['task','prog'].forEach(t => {
+      const el = document.getElementById(t+'-owner-dropdown');
+      if (el) el.style.display = 'none';
+    });
+  }
+});
+
+function getCheckedOwners(prefix) {
+  const checked = [];
+  ['michelle','matthew','carter'].forEach(o => {
+    const el = document.getElementById(prefix+'-'+o);
+    if (el && el.checked) checked.push(o.charAt(0).toUpperCase()+o.slice(1));
+  });
+  return checked;
+}
+
+function updateOwnerFilter(tab) {
+  const prefix = tab==='task' ? 'tf' : 'pf';
+  const checked = getCheckedOwners(prefix);
+  const btn = document.getElementById(tab+'-owner-btn');
+  if (btn) {
+    btn.textContent = checked.length === 3 ? 'Showing: All ▾'
+      : checked.length === 0 ? 'Showing: None ▾'
+      : `Showing: ${checked.join(', ')} ▾`;
+  }
+  if (tab==='task') renderTasks();
+  else renderProgress();
+}
+
+function getTaskOwnerFilter() { return getCheckedOwners('tf'); }
+function getProgOwnerFilter() { return getCheckedOwners('pf'); }
 let taskLinks = []; // [{label, url}] for current modal
 let logLinks  = []; // [{label, url}] for current log modal
 
@@ -928,14 +982,14 @@ function taskCard(t) {
 
 function applyFilters(list) {
   const fs = document.getElementById('f-status').value;
-  const fo = document.getElementById('f-owner').value;
+  const fo = getTaskOwnerFilter();
   const fc = document.getElementById('f-cat').value;
   return list.filter(t => {
     const owners = (t.owner||'').split(',').map(o=>o.trim());
+    const ownerMatch = fo.length === 0 || owners.some(o => fo.includes(o));
     return (!fs || t.status===fs) &&
-      (!fo || owners.includes(fo)) &&
-      (!fc || t.cat===fc) &&
-      (!myTasksActive || owners.includes(currentUser));
+      ownerMatch &&
+      (!fc || t.cat===fc);
   });
 }
 
@@ -1686,10 +1740,12 @@ function toggleProgMyTasks() {
 
 // ── Progress tab ──────────────────────────────────────────
 function renderProgress() {
+  const fo = getProgOwnerFilter();
   const filter = t => {
-    if (!progMyTasksActive) return true;
+    if (fo.length === 0) return false;
+    if (fo.length === 3) return true;
     const owners = (t.owner||'').split(',').map(o=>o.trim());
-    return owners.includes(currentUser);
+    return owners.some(o => fo.includes(o));
   };
   const active = tasks.filter(t => t.status==='In progress' && filter(t));
   const other  = tasks.filter(t => t.status!=='In progress' && t.status!=='Done' && t.status!=='Dropped' && filter(t))
