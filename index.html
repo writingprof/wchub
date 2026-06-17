@@ -1096,11 +1096,19 @@ async function undoDelete() {
 async function deleteTask(id) {
   const item = tasks.find(t=>t.id===id);
   if (!item) return;
-  deletedIds.add(id); // mark locally immediately
+  deletedIds.add(id);
   tasks = tasks.filter(t=>t.id!==id);
   if (connected) {
     const softDeleted = {...item, deleted:'true', deletedOn:today()};
-    await api({action:'saveTask', data:softDeleted});
+    console.log('Soft deleting task:', softDeleted);
+    try {
+      const result = await api({action:'saveTask', data:softDeleted});
+      console.log('Save result:', result);
+    } catch(e) {
+      console.error('Save error:', e);
+    }
+  } else {
+    console.log('Not connected — delete is local only');
   }
   renderAll();
   if (item) showToast(`Deleted "${item.title.slice(0,40)}${item.title.length>40?'…':''}"`, 'task', item);
