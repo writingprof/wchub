@@ -165,7 +165,7 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
 .subtask-title{font-size:13px;color:var(--text);flex:1;line-height:1.4}
 .subtask-title.done{text-decoration:line-through;color:var(--text3)}
 .subtask-due{font-size:11px;color:var(--text3);white-space:nowrap}
-.subtask-count{font-size:11px;color:var(--text2);padding:1px 7px;background:var(--bg2);border-radius:20px;white-space:nowrap}
+.subtask-count{font-size:11px;color:#854F0B;padding:1px 7px;background:#FAEEDA;border-radius:20px;white-space:nowrap}
 /* Calendar - Gantt style */
 .cal-wrap{width:100%;overflow-x:auto}
 .cal-header-row{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:2px solid var(--border)}
@@ -792,7 +792,10 @@ function taskCard(t) {
     <div id="subs-${t.id}" style="display:${isOpen?'block':'none'};margin-top:8px;border-top:1px solid var(--border);padding-top:8px">
       ${subs.map(s=>`
         <div class="subtask-row">
-          <input type="checkbox" class="subtask-check" ${s.done==='true'||s.done===true?'checked':''} onchange="toggleSubtask('${s.id}',this.checked)">
+          <input type="checkbox" class="subtask-check" ${s.done==='true'||s.done===true?'checked':''}
+            ${t.status!=='In progress'?'disabled title="Mark task In progress to check subtasks"':''}
+            onchange="toggleSubtask('${s.id}',this.checked)"
+            style="${t.status!=='In progress'?'opacity:.4;cursor:not-allowed':''}">
           <span class="subtask-title ${s.done==='true'||s.done===true?'done':''}">${s.title}</span>
           <span class="badge ${ownerBadge(s.owner)}">${s.owner}</span>
           ${cleanDate(s.due)?`<span class="subtask-due">${fmtDate(s.due)}</span>`:''}
@@ -1597,71 +1600,65 @@ async function saveSubtask() {
 
 // ── Progress tab ──────────────────────────────────────────
 function renderProgress() {
-  const AY_START = new Date('2026-08-01');
-  const AY_END   = new Date('2027-05-31');
-  const AY_RANGE = AY_END - AY_START;
-
-  const active = tasks.filter(t => t.status==='In progress' && t.status!=='Dropped');
+  const active = tasks.filter(t => t.status==='In progress');
   const other  = tasks.filter(t => t.status!=='In progress' && t.status!=='Done' && t.status!=='Dropped')
     .sort((a,b) => new Date(cleanDate(a.due)||'9999') - new Date(cleanDate(b.due)||'9999'));
 
-  function progBar(t) {
+  const ownerAccent = {
+    Michelle:'var(--michelle)',
+    Matthew:'var(--matthew)',
+    Carter:'var(--carter)',
+    All:'var(--gray)'
+  };
+
+  function progRow(t) {
     const pct = getProgress(t);
     const subs = getSubtasksFor(t.id);
-    const subCount = subs.length ? `<span class="subtask-count">${subs.filter(s=>s.done==='true'||s.done===true).length}/${subs.length} subtasks</span>` : '';
+    const subCount = subs.length
+      ? `<span class="subtask-count">${subs.filter(s=>s.done==='true'||s.done===true).length}/${subs.length} subtasks</span>`
+      : '';
     const autoProgress = subs.length > 0;
+    const accent = ownerAccent[t.owner] || 'var(--gray)';
 
-    const s = cleanDate(t.start) || cleanDate(t.due);
-    const e = cleanDate(t.due) || cleanDate(t.start);
-    let leftPct = 0, widthPct = 100;
-    if (s && e) {
-      const ts = new Date(s+'T00:00:00');
-      const te = new Date(e+'T00:00:00');
-      leftPct  = Math.max(0, Math.min(100, (ts-AY_START)/AY_RANGE*100));
-      widthPct = Math.max(1, Math.min(100-leftPct, (te-ts)/AY_RANGE*100));
-    }
-
-    const ownerColors = {
-      Michelle:['var(--michelle-light)','var(--michelle)'],
-      Matthew:['var(--matthew-light)','var(--matthew)'],
-      Carter:['var(--carter-light)','var(--carter)'],
-      All:['var(--gray-light)','var(--gray)']
-    };
-    const [bg, fg] = ownerColors[t.owner] || ownerColors['All'];
-
-    const slider = !autoProgress ? `
-      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
-        <span style="font-size:11px;color:var(--text3)">Set progress:</span>
-        <input type="range" min="0" max="100" step="10" value="${pct}"
-          style="flex:1;accent-color:${fg}"
-          oninput="this.nextElementSibling.textContent=this.value+'%'"
-          onchange="saveCardProgress('${t.id}',this.value)">
-        <span style="font-size:11px;font-weight:600;color:var(--text2);width:30px">${pct}%</span>
-      </div>` : '';
+    // Custom slider: gray track, green fill, owner-colored thumb
+    const sliderHtml = `
+      <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+        <div style="flex:1;position:relative;height:8px">
+          <div style="position:absolute;inset:0;background:var(--bg2);border-radius:4px;border:1px solid var(--border)"></div>
+          <div id="prog-fill-${t.id}" style="position:absolute;top:0;left:0;height:100%;width:${pct}%;background:var(--green);border-radius:4px;transition:width .2s"></div>
+          <input type="range" min="0" max="100" step="10" value="${pct}"
+            ${autoProgress ? 'disabled' : ''}
+            style="position:absolute;inset:0;width:100%;opacity:0;cursor:${autoProgress?'default':'pointer'};height:100%"
+            oninput="updateProgFill('${t.id}',this.value)"
+            onchange="saveCardProgress('${t.id}',this.value)">
+        </div>
+        <span id="prog-pct-${t.id}" style="font-size:12px;font-weight:600;color:var(--text2);width:34px;text-align:right">${pct}%</span>
+      </div>`;
 
     return `<div class="prog-row">
       <div class="prog-row-header">
         <span class="prog-title">${t.title}</span>
         <span class="badge ${ownerBadge(t.owner)}">${t.owner}</span>
         ${subCount}
-        <span class="prog-pct">${pct}%</span>
       </div>
-      <div class="prog-track">
-        <div class="prog-position" style="left:${leftPct}%;width:${widthPct}%;background:${bg}">
-          <div class="prog-fill-inner" style="width:${pct}%;background:${fg}"></div>
-        </div>
-      </div>
-      ${slider}
+      ${sliderHtml}
     </div>`;
   }
 
   document.getElementById('progress-active').innerHTML = active.length
-    ? active.map(progBar).join('')
+    ? active.map(progRow).join('')
     : '<div class="empty">No tasks currently in progress.</div>';
 
   document.getElementById('progress-other').innerHTML = other.length
-    ? other.map(progBar).join('')
+    ? other.map(progRow).join('')
     : '<div class="empty">No other tasks.</div>';
+}
+
+function updateProgFill(taskId, val) {
+  const fill = document.getElementById('prog-fill-'+taskId);
+  const pct  = document.getElementById('prog-pct-'+taskId);
+  if (fill) fill.style.width = val + '%';
+  if (pct)  pct.textContent  = val + '%';
 }
 
 ['task-modal','ms-modal','log-modal','expand-modal','subtask-modal'].forEach(id=>{
