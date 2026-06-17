@@ -166,6 +166,13 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
 .subtask-title.done{text-decoration:line-through;color:var(--text3)}
 .subtask-due{font-size:11px;color:var(--text3);white-space:nowrap}
 .subtask-count{font-size:11px;color:#854F0B;padding:1px 7px;background:#FAEEDA;border-radius:20px;white-space:nowrap}
+/* Progress slider */
+.prog-slider{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:4px;outline:none;cursor:pointer;background:linear-gradient(to right,var(--green) 0%,var(--green) var(--val,0%),var(--bg2) var(--val,0%),var(--bg2) 100%)}
+.prog-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;border:2.5px solid var(--green);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2)}
+.prog-slider::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:2.5px solid var(--green);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2)}
+.prog-slider:disabled{cursor:default;opacity:.5}
+.prog-slider:disabled::-webkit-slider-thumb{border-color:var(--text3);cursor:default}
+.prog-slider:disabled::-moz-range-thumb{border-color:var(--text3);cursor:default}
 /* Calendar - Gantt style */
 .cal-wrap{width:100%;overflow-x:auto}
 .cal-header-row{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:2px solid var(--border)}
@@ -187,8 +194,11 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
 .cal-gantt-bar.continues-right{border-radius:3px 0 0 3px}
 .cal-gantt-bar.continues-both{border-left:none;border-radius:0}
 .cal-milestone-dot{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;border:2px solid var(--bg)}
-.cal-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
-.cal-legend-swatch{width:14px;height:10px;border-radius:2px}
+.tab-more{position:relative}
+.more-menu{position:absolute;top:100%;left:0;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:100;min-width:140px;padding:4px 0}
+.more-menu button{display:block;width:100%;text-align:left;padding:8px 16px;font-size:13px;color:var(--text2);background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif}
+.more-menu button:hover{background:var(--bg2);color:var(--text)}
+.tab.more-active{color:var(--text);border-bottom-color:var(--text);font-weight:500}
 </style>
 </head>
 <body>
@@ -215,10 +225,8 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
     <div class="tabs">
       <button class="tab active" onclick="switchTab('dashboard')">Dashboard</button>
       <button class="tab" onclick="switchTab('tasks')">Tasks</button>
-      <button class="tab" onclick="switchTab('milestones')">Milestones</button>
-      <button class="tab" onclick="switchTab('log')">Weekly log</button>
-      <button class="tab" onclick="switchTab('calendar')">Calendar</button>
       <button class="tab" onclick="switchTab('progress')">Progress</button>
+      <button class="tab" onclick="switchTab('log')">Weekly log</button>
     </div>
   </div>
 
@@ -231,8 +239,26 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
     <div class="section-head"><h2>Upcoming this week</h2></div>
     <div id="upcoming"></div>
     <hr class="divider">
-    <div class="section-head"><h2>Recent activity</h2></div>
-    <div id="recent-activity"></div>
+    <div class="section-head">
+      <h2>Calendar</h2>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-sm" onclick="calNav(-1)">‹ Prev</button>
+        <select id="cal-month-select" onchange="calJump()" style="font-size:12px;padding:5px 8px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);font-family:'Inter',sans-serif"></select>
+        <button class="btn btn-sm" onclick="calNav(1)">Next ›</button>
+        <select id="cal-priority-select" onchange="toggleCalPriority()" style="font-size:12px;padding:5px 8px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);font-family:'Inter',sans-serif">
+          <option value="all">All tasks</option>
+          <option value="priority">Priority tasks only</option>
+        </select>
+      </div>
+    </div>
+    <div id="cal-legend" style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap"></div>
+    <div id="cal-grid"></div>
+    <div id="cal-nodate" style="margin-top:1.5rem"></div>
+    <hr class="divider">
+    <div class="section-head"><h2>Milestones</h2>
+      <button class="btn btn-primary btn-sm" onclick="openMsModal()">+ Add milestone</button>
+    </div>
+    <div id="ms-list-dash"></div>
   </div>
 
   <div id="panel-tasks" class="panel">
@@ -274,14 +300,6 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
     <div id="task-list"></div>
   </div>
 
-  <div id="panel-milestones" class="panel">
-    <div class="section-head">
-      <h2>Key milestones</h2>
-      <button class="btn btn-primary btn-sm" onclick="openMsModal()">+ Add milestone</button>
-    </div>
-    <div id="ms-list"></div>
-  </div>
-
   <div id="panel-log" class="panel">
     <div class="section-head">
       <div>
@@ -293,32 +311,8 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
     <div id="log-list"></div>
   </div>
 
-  <div id="panel-calendar" class="panel">
-    <div class="section-head">
-      <h2>Calendar</h2>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-sm" onclick="calNav(-1)">‹ Prev</button>
-        <select id="cal-month-select" onchange="calJump()" style="font-size:12px;padding:5px 8px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);font-family:'Inter',sans-serif"></select>
-        <button class="btn btn-sm" onclick="calNav(1)">Next ›</button>
-        <select id="cal-priority-select" onchange="toggleCalPriority()" style="font-size:12px;padding:5px 8px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);font-family:'Inter',sans-serif">
-          <option value="all">All tasks</option>
-          <option value="priority">Priority tasks only</option>
-        </select>
-      </div>
-    </div>
-    <div id="cal-legend" style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap"></div>
-    <div id="cal-grid"></div>
-    <div id="cal-nodate" style="margin-top:1.5rem"></div>
-  </div>
-
   <div id="panel-progress" class="panel">
     <div class="section-head"><h2>In progress</h2></div>
-    <div id="progress-ay-bar" style="margin-bottom:1rem">
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px">
-        <span>Aug 1, 2026</span><span>May 31, 2027</span>
-      </div>
-      <div style="height:1px;background:var(--border);margin-bottom:4px"></div>
-    </div>
     <div id="progress-active"></div>
     <hr class="divider">
     <div class="section-head" style="margin-top:0"><h2>All other tasks</h2></div>
@@ -632,7 +626,7 @@ function setUser(u) {
 }
 
 function switchTab(t) {
-  const names = ['dashboard','tasks','milestones','log','calendar','progress'];
+  const names = ['dashboard','tasks','progress','log'];
   document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', names[i]===t));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-'+t).classList.add('active');
@@ -882,18 +876,6 @@ function renderDashboard() {
         </div>
       </div>`).join('')
     : '<div class="empty">Nothing due this week.</div>';
-
-  const recent = [...logs].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,4);
-  document.getElementById('recent-activity').innerHTML = recent.length
-    ? recent.map(l=>`<div class="log-entry">
-        <div class="log-header">
-          <span class="log-author">${l.addedBy}</span>
-          <span class="badge ${ownerBadge(l.addedBy)}">${l.type}</span>
-          <span class="due-tag">${fmtDate(l.date)}</span>
-        </div>
-        <div class="log-text">${l.text}</div>
-      </div>`).join('')
-    : '<div class="empty">No log entries yet.</div>';
 }
 
 function renderTasks() {
@@ -944,8 +926,8 @@ function renderTasks() {
 
 function renderMilestones() {
   const sorted = [...milestones].sort((a,b)=>new Date(a.date)-new Date(b.date));
-  document.getElementById('ms-list').innerHTML = sorted.length ? sorted.map(m=>{
-    const past = new Date(m.date+'T00:00:00') < new Date();
+  const html = sorted.length ? sorted.map(m=>{
+    const past = new Date((cleanDate(m.date)||m.date)+'T00:00:00') < new Date();
     return `<div class="ms-row">
       <span class="ms-date">${fmtDate(m.date)}</span>
       <span style="font-size:16px;flex-shrink:0;color:${past?'var(--green)':'var(--carter)'}">${past?'✓':'⚑'}</span>
@@ -953,7 +935,9 @@ function renderMilestones() {
       <button class="btn btn-sm" onclick="editMilestone('${m.id}')">Edit</button>
       <button class="btn btn-sm btn-danger" onclick="deleteMilestone('${m.id}')">Delete</button>
     </div>`;
-  }).join('') : '<div class="empty">No milestones.</div>';
+  }).join('') : '<div class="empty">No milestones. Use + Add milestone to add one.</div>';
+  const el = document.getElementById('ms-list-dash');
+  if (el) el.innerHTML = html;
 }
 
 function renderLog() {
@@ -1197,23 +1181,7 @@ function renderCalendar() {
   if (msMo.length) legend += `<div class="cal-legend-item"><span style="font-size:13px;color:var(--carter)">⚑</span>Milestone</div>`;
   document.getElementById('cal-legend').innerHTML = legend;
 
-  // No-date tasks
-  if (noDate.length) {
-    document.getElementById('cal-nodate').innerHTML = `
-      <div class="month-header" style="margin-top:1rem">Tasks with no dates <span class="month-count">${noDate.length}</span></div>
-      ${noDate.map(t=>`<div class="card" style="margin-bottom:6px">
-        <div class="card-top">
-          <div class="dot ${dotClass(t.priority)}"></div>
-          <div class="card-title">${t.title}</div>
-        </div>
-        <div class="card-meta">
-          <span class="badge ${ownerBadge(t.owner)}">${t.owner}</span>
-          <span class="badge ${catBadge(t.cat)}">${t.cat}</span>
-        </div>
-      </div>`).join('')}`;
-  } else {
-    document.getElementById('cal-nodate').innerHTML = '';
-  }
+  document.getElementById('cal-nodate').innerHTML = '';
 }
 
 function renderAll() { renderDashboard(); renderTasks(); renderMilestones(); renderLog(); renderCalendar(); renderProgress(); }
@@ -1620,18 +1588,14 @@ function renderProgress() {
     const autoProgress = subs.length > 0;
     const accent = ownerAccent[t.owner] || 'var(--gray)';
 
-    // Custom slider: gray track, green fill, owner-colored thumb
     const sliderHtml = `
       <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
-        <div style="flex:1;position:relative;height:8px">
-          <div style="position:absolute;inset:0;background:var(--bg2);border-radius:4px;border:1px solid var(--border)"></div>
-          <div id="prog-fill-${t.id}" style="position:absolute;top:0;left:0;height:100%;width:${pct}%;background:var(--green);border-radius:4px;transition:width .2s"></div>
-          <input type="range" min="0" max="100" step="10" value="${pct}"
-            ${autoProgress ? 'disabled' : ''}
-            style="position:absolute;inset:0;width:100%;opacity:0;cursor:${autoProgress?'default':'pointer'};height:100%"
-            oninput="updateProgFill('${t.id}',this.value)"
-            onchange="saveCardProgress('${t.id}',this.value)">
-        </div>
+        <input type="range" min="0" max="100" step="10" value="${pct}"
+          class="prog-slider"
+          ${autoProgress ? 'disabled' : ''}
+          style="flex:1;--val:${pct}%"
+          oninput="updateProgFill('${t.id}',this.value);this.style.setProperty('--val',this.value+'%')"
+          onchange="saveCardProgress('${t.id}',this.value)">
         <span id="prog-pct-${t.id}" style="font-size:12px;font-weight:600;color:var(--text2);width:34px;text-align:right">${pct}%</span>
       </div>`;
 
@@ -1655,10 +1619,8 @@ function renderProgress() {
 }
 
 function updateProgFill(taskId, val) {
-  const fill = document.getElementById('prog-fill-'+taskId);
-  const pct  = document.getElementById('prog-pct-'+taskId);
-  if (fill) fill.style.width = val + '%';
-  if (pct)  pct.textContent  = val + '%';
+  const pct = document.getElementById('prog-pct-'+taskId);
+  if (pct) pct.textContent = val + '%';
 }
 
 ['task-modal','ms-modal','log-modal','expand-modal','subtask-modal'].forEach(id=>{
