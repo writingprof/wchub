@@ -144,6 +144,23 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--michelle);border-radius:50%;animation:spin .7s linear infinite}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+/* Progress tab */
+.prog-row{margin-bottom:10px}
+.prog-row-header{display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap}
+.prog-title{font-size:12px;font-weight:500;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog-pct{font-size:11px;font-weight:600;color:var(--text2);width:34px;text-align:right;flex-shrink:0}
+.prog-track{height:10px;background:var(--bg2);border-radius:5px;border:1px solid var(--border);position:relative;overflow:hidden}
+.prog-fill{height:100%;border-radius:5px;transition:width .3s}
+.prog-position{position:absolute;top:0;height:100%;border-radius:5px;overflow:hidden}
+.prog-fill-inner{height:100%;border-radius:5px}
+/* Subtasks */
+.subtask-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+.subtask-row:last-child{border-bottom:none}
+.subtask-check{width:16px;height:16px;accent-color:var(--michelle);cursor:pointer;flex-shrink:0}
+.subtask-title{font-size:13px;color:var(--text);flex:1;line-height:1.4}
+.subtask-title.done{text-decoration:line-through;color:var(--text3)}
+.subtask-due{font-size:11px;color:var(--text3);white-space:nowrap}
+.subtask-count{font-size:11px;color:var(--text2);padding:1px 7px;background:var(--bg2);border-radius:20px;white-space:nowrap}
 /* Calendar - Gantt style */
 .cal-wrap{width:100%;overflow-x:auto}
 .cal-header-row{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:2px solid var(--border)}
@@ -196,6 +213,7 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
       <button class="tab" onclick="switchTab('milestones')">Milestones</button>
       <button class="tab" onclick="switchTab('log')">Weekly log</button>
       <button class="tab" onclick="switchTab('calendar')">Calendar</button>
+      <button class="tab" onclick="switchTab('progress')">Progress</button>
     </div>
   </div>
 
@@ -287,9 +305,68 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
     <div id="cal-grid"></div>
     <div id="cal-nodate" style="margin-top:1.5rem"></div>
   </div>
+
+  <div id="panel-progress" class="panel">
+    <div class="section-head"><h2>In progress</h2></div>
+    <div id="progress-ay-bar" style="margin-bottom:1rem">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px">
+        <span>Aug 1, 2026</span><span>May 31, 2027</span>
+      </div>
+      <div style="height:1px;background:var(--border);margin-bottom:4px"></div>
+    </div>
+    <div id="progress-active"></div>
+    <hr class="divider">
+    <div class="section-head" style="margin-top:0"><h2>All other tasks</h2></div>
+    <div id="progress-other"></div>
+  </div>
 </div>
 
-<!-- Task modal -->
+<!-- Subtask modal -->
+<div class="overlay" id="subtask-modal">
+  <div class="modal">
+    <h3 id="subtask-modal-title">Add subtask</h3>
+    <div class="field"><label>Title</label><input type="text" id="st-title" placeholder="What needs doing?"></div>
+    <div class="two-col">
+      <div class="field"><label>Owner</label>
+        <select id="st-owner">
+          <option value="Carter">Carter</option>
+          <option value="Michelle">Michelle</option>
+          <option value="Matthew">Matthew</option>
+          <option value="All">All three</option>
+        </select>
+      </div>
+      <div class="field"><label>Due date</label><input type="date" id="st-due"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeSubtaskModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSubtask()">✓ Save subtask</button>
+    </div>
+  </div>
+</div>
+
+<!-- Task expand modal (subtasks + progress) -->
+<div class="overlay" id="expand-modal">
+  <div class="modal" style="max-width:560px">
+    <h3 id="expand-modal-title"></h3>
+    <div id="expand-meta" style="margin-bottom:1rem"></div>
+    <div class="section-head" style="margin-bottom:8px">
+      <h2 style="font-size:13px">Progress</h2>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.25rem">
+      <input type="range" id="expand-progress" min="0" max="100" step="10" style="flex:1;accent-color:var(--michelle)" oninput="updateProgressDisplay()">
+      <span id="expand-progress-val" style="font-size:14px;font-weight:600;color:var(--text);width:36px;text-align:right">0%</span>
+    </div>
+    <div class="section-head">
+      <h2 style="font-size:13px">Subtasks</h2>
+      <button class="btn btn-sm btn-primary" onclick="openSubtaskModal()">+ Add subtask</button>
+    </div>
+    <div id="expand-subtasks" style="margin-bottom:1rem"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeExpandModal()">Close</button>
+      <button class="btn btn-primary" onclick="saveExpandModal()">✓ Save</button>
+    </div>
+  </div>
+</div>
 <div class="overlay" id="task-modal">
   <div class="modal">
     <h3 id="task-modal-title">Add task</h3>
@@ -521,6 +598,7 @@ async function loadData() {
     logs = data.logs || [];
     connected = true;
     setStatus('ok', 'Connected — Google Sheets');
+    await loadSubtasks();
     renderAll();
   } catch(e) {
     setStatus('err', 'Could not connect — using demo data');
@@ -549,7 +627,7 @@ function setUser(u) {
 }
 
 function switchTab(t) {
-  const names = ['dashboard','tasks','milestones','log','calendar'];
+  const names = ['dashboard','tasks','milestones','log','calendar','progress'];
   document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', names[i]===t));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-'+t).classList.add('active');
@@ -672,6 +750,7 @@ function taskCard(t) {
         <option value="Paused">Paused</option>
         <option value="Dropped">Dropped</option>
       </select>
+      <button class="btn btn-sm" onclick="openExpandModal('${t.id}')">⊕ Details</button>
       <button class="btn btn-sm" onclick="editTask('${t.id}')">Edit</button>
       <button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')">Delete</button>
       ${origDueStr ? `<span style="margin-left:auto">${origDueStr}</span>` : ''}
@@ -937,6 +1016,7 @@ function renderCalendar() {
   const maxLane = Math.max(0, ...Object.values(lanes)) + 1;
   const BAR_H = 20; // px per lane
   const DAY_H = 22; // day number row height
+  const MS_H = 18;  // reserved height for milestone flags at bottom
 
   // Build HTML
   const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -946,7 +1026,7 @@ function renderCalendar() {
   html += `</div>`;
 
   weeks.forEach(weekDays => {
-    const weekHeight = DAY_H + maxLane * BAR_H + 6;
+    const weekHeight = DAY_H + maxLane * BAR_H + MS_H + 4;
     html += `<div class="cal-week-row" style="height:${weekHeight}px">`;
 
     // Day number cells (background grid)
@@ -1002,13 +1082,14 @@ function renderCalendar() {
         title="${t.title} (${t.owner}${t.due?' · Due '+fmtDate(t.due):''})">${label}</div>`;
     });
 
-    // Milestone flags
+    // Milestone flags — sit in reserved bottom lane below all task bars
     msMo.forEach(ms => {
       const idx = weekDays.findIndex(wd => wd.dateStr === ms.date);
       if (idx < 0) return;
       const colW = 100/7;
       const left = idx * colW;
-      html += `<div style="position:absolute;left:calc(${left}% + 2px);bottom:3px;z-index:3;display:flex;align-items:center;gap:3px;max-width:calc(${colW}% - 4px);overflow:hidden">
+      const topPos = maxLane * BAR_H + 2;
+      html += `<div style="position:absolute;left:calc(${left}% + 2px);top:${topPos}px;z-index:3;display:flex;align-items:center;gap:3px;max-width:calc(${colW}% - 4px);overflow:hidden">
         <span style="font-size:13px;color:var(--carter);flex-shrink:0">⚑</span>
         <span style="font-size:9px;font-weight:600;color:var(--carter);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ms.title}</span>
       </div>`;
@@ -1055,7 +1136,7 @@ function renderCalendar() {
   }
 }
 
-function renderAll() { renderDashboard(); renderTasks(); renderMilestones(); renderLog(); renderCalendar(); }
+function renderAll() { renderDashboard(); renderTasks(); renderMilestones(); renderLog(); renderCalendar(); renderProgress(); }
 
 async function updateStatus(id, val) {
   if (val === 'prompt-clear') val = '';
@@ -1286,8 +1367,219 @@ async function saveLog() {
   closeLogModal(); renderLog(); renderDashboard();
 }
 
-['task-modal','ms-modal','log-modal'].forEach(id=>{
-  document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+// ── Subtasks ──────────────────────────────────────────────
+let subtasks = []; // {id, parentId, title, owner, due, done}
+let expandingTaskId = null;
+let editingSubtaskId = null;
+
+async function loadSubtasks() {
+  if (!connected) return;
+  try {
+    const data = await api({action:'readSubtasks'});
+    if (data.subtasks) subtasks = data.subtasks;
+  } catch(e) {}
+}
+
+function getSubtasksFor(taskId) {
+  return subtasks.filter(s => s.parentId === taskId);
+}
+
+function getProgress(t) {
+  // If manually set, use that; if subtasks exist, calculate
+  const subs = getSubtasksFor(t.id);
+  if (subs.length > 0) {
+    const done = subs.filter(s => s.done==='true'||s.done===true).length;
+    return Math.round((done/subs.length)*10)*10; // round to nearest 10
+  }
+  return parseInt(t.progress)||0;
+}
+
+function openExpandModal(taskId) {
+  expandingTaskId = taskId;
+  const t = tasks.find(x=>x.id===taskId);
+  if (!t) return;
+  document.getElementById('expand-modal-title').textContent = t.title;
+  document.getElementById('expand-meta').innerHTML = `
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <span class="badge ${ownerBadge(t.owner)}">${t.owner}</span>
+      <span class="badge ${catBadge(t.cat)}">${t.cat}</span>
+      ${cleanDate(t.due)?`<span class="due-tag">Due ${fmtDate(t.due)}</span>`:''}
+    </div>`;
+  const subs = getSubtasksFor(taskId);
+  const manualProgress = subs.length > 0 ? getProgress(t) : (parseInt(t.progress)||0);
+  const slider = document.getElementById('expand-progress');
+  slider.value = manualProgress;
+  slider.disabled = subs.length > 0; // auto-calculated if subtasks exist
+  document.getElementById('expand-progress-val').textContent = manualProgress + '%';
+  renderSubtaskList();
+  document.getElementById('expand-modal').classList.add('open');
+}
+
+function closeExpandModal() {
+  document.getElementById('expand-modal').classList.remove('open');
+  expandingTaskId = null;
+}
+
+async function saveExpandModal() {
+  const t = tasks.find(x=>x.id===expandingTaskId);
+  if (!t) return;
+  const subs = getSubtasksFor(expandingTaskId);
+  if (subs.length === 0) {
+    t.progress = document.getElementById('expand-progress').value;
+  }
+  await pushTask(t);
+  closeExpandModal();
+  renderAll();
+}
+
+function updateProgressDisplay() {
+  const val = document.getElementById('expand-progress').value;
+  document.getElementById('expand-progress-val').textContent = val + '%';
+}
+
+function renderSubtaskList() {
+  const subs = getSubtasksFor(expandingTaskId);
+  const el = document.getElementById('expand-subtasks');
+  if (!subs.length) {
+    el.innerHTML = '<div class="empty" style="padding:1rem 0">No subtasks yet.</div>';
+    return;
+  }
+  el.innerHTML = subs.map(s => `
+    <div class="subtask-row">
+      <input type="checkbox" class="subtask-check" ${s.done==='true'||s.done===true?'checked':''} onchange="toggleSubtask('${s.id}',this.checked)">
+      <span class="subtask-title ${s.done==='true'||s.done===true?'done':''}">${s.title}</span>
+      <span class="badge ${ownerBadge(s.owner)}">${s.owner}</span>
+      ${cleanDate(s.due)?`<span class="subtask-due">${fmtDate(s.due)}</span>`:''}
+      <button class="btn btn-sm btn-danger" onclick="deleteSubtask('${s.id}')">×</button>
+    </div>`).join('');
+  // Update progress if auto-calculated
+  const subs2 = getSubtasksFor(expandingTaskId);
+  const pct = getProgress(tasks.find(x=>x.id===expandingTaskId));
+  document.getElementById('expand-progress').value = pct;
+  document.getElementById('expand-progress-val').textContent = pct + '%';
+}
+
+async function toggleSubtask(id, checked) {
+  const s = subtasks.find(x=>x.id===id);
+  if (!s) return;
+  s.done = checked ? 'true' : 'false';
+  if (connected) await api({action:'saveSubtask', data:s});
+  renderSubtaskList();
+  renderAll();
+}
+
+async function deleteSubtask(id) {
+  subtasks = subtasks.filter(s=>s.id!==id);
+  if (connected) await api({action:'deleteSubtask', id});
+  renderSubtaskList();
+  renderAll();
+}
+
+function openSubtaskModal(subId) {
+  editingSubtaskId = subId || null;
+  document.getElementById('subtask-modal-title').textContent = subId ? 'Edit subtask' : 'Add subtask';
+  if (subId) {
+    const s = subtasks.find(x=>x.id===subId);
+    document.getElementById('st-title').value = s.title;
+    document.getElementById('st-owner').value = s.owner;
+    document.getElementById('st-due').value = cleanDate(s.due)||'';
+  } else {
+    document.getElementById('st-title').value = '';
+    document.getElementById('st-owner').value = currentUser;
+    document.getElementById('st-due').value = '';
+  }
+  document.getElementById('subtask-modal').classList.add('open');
+  document.getElementById('st-title').focus();
+}
+
+function closeSubtaskModal() { document.getElementById('subtask-modal').classList.remove('open'); editingSubtaskId=null; }
+
+async function saveSubtask() {
+  const title = document.getElementById('st-title').value.trim();
+  if (!title) return;
+  const s = {
+    id: editingSubtaskId||'st'+Date.now(),
+    parentId: expandingTaskId,
+    title,
+    owner: document.getElementById('st-owner').value,
+    due: document.getElementById('st-due').value,
+    done: 'false',
+    added: today(), addedBy: currentUser
+  };
+  if (editingSubtaskId) {
+    const idx = subtasks.findIndex(x=>x.id===editingSubtaskId);
+    if (idx>-1) subtasks[idx]=s;
+  } else {
+    subtasks.push(s);
+  }
+  if (connected) await api({action:'saveSubtask', data:s});
+  closeSubtaskModal();
+  renderSubtaskList();
+  renderAll();
+}
+
+// ── Progress tab ──────────────────────────────────────────
+function renderProgress() {
+  const AY_START = new Date('2026-08-01');
+  const AY_END   = new Date('2027-05-31');
+  const AY_RANGE = AY_END - AY_START;
+
+  const active = tasks.filter(t => t.status==='In progress' && t.status!=='Dropped');
+  const other  = tasks.filter(t => t.status!=='In progress' && t.status!=='Done' && t.status!=='Dropped')
+    .sort((a,b) => new Date(cleanDate(a.due)||'9999') - new Date(cleanDate(b.due)||'9999'));
+
+  function progBar(t) {
+    const pct = getProgress(t);
+    const subs = getSubtasksFor(t.id);
+    const subCount = subs.length ? `<span class="subtask-count">${subs.filter(s=>s.done==='true'||s.done===true).length}/${subs.length} subtasks</span>` : '';
+
+    // Position bar on AY timeline
+    const s = cleanDate(t.start) || cleanDate(t.due);
+    const e = cleanDate(t.due) || cleanDate(t.start);
+    let leftPct = 0, widthPct = 100;
+    if (s && e) {
+      const ts = new Date(s+'T00:00:00');
+      const te = new Date(e+'T00:00:00');
+      leftPct  = Math.max(0, Math.min(100, (ts-AY_START)/AY_RANGE*100));
+      widthPct = Math.max(1, Math.min(100-leftPct, (te-ts)/AY_RANGE*100));
+    }
+
+    const ownerColors = {
+      Michelle:['var(--michelle-light)','var(--michelle)'],
+      Matthew:['var(--matthew-light)','var(--matthew)'],
+      Carter:['var(--carter-light)','var(--carter)'],
+      All:['var(--gray-light)','var(--gray)']
+    };
+    const [bg, fg] = ownerColors[t.owner] || ownerColors['All'];
+
+    return `<div class="prog-row">
+      <div class="prog-row-header">
+        <span class="prog-title">${t.title}</span>
+        <span class="badge ${ownerBadge(t.owner)}">${t.owner}</span>
+        ${subCount}
+        <span class="prog-pct">${pct}%</span>
+        <button class="btn btn-sm" onclick="openExpandModal('${t.id}')" style="font-size:10px;padding:2px 7px">Details</button>
+      </div>
+      <div class="prog-track">
+        <div class="prog-position" style="left:${leftPct}%;width:${widthPct}%;background:${bg}">
+          <div class="prog-fill-inner" style="width:${pct}%;background:${fg}"></div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('progress-active').innerHTML = active.length
+    ? active.map(progBar).join('')
+    : '<div class="empty">No tasks currently in progress.</div>';
+
+  document.getElementById('progress-other').innerHTML = other.length
+    ? other.map(progBar).join('')
+    : '<div class="empty">No other tasks.</div>';
+}
+
+['task-modal','ms-modal','log-modal','expand-modal','subtask-modal'].forEach(id=>{
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 });
 
 buildCalMonthSelect();
