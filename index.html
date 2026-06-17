@@ -698,6 +698,33 @@ function dueClass(d) {
 }
 function today() { return new Date().toISOString().slice(0,10); }
 
+function toggleSubtaskList(taskId) {
+  const el = document.getElementById('subs-'+taskId);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function updateCardProgress(taskId, val) {
+  // Update display inline without saving
+  const card = document.getElementById('tc-'+taskId);
+  if (card) {
+    const span = card.querySelector('span[style*="width:30px"]');
+    if (span) span.textContent = val + '%';
+  }
+}
+
+async function saveCardProgress(taskId, val) {
+  const t = tasks.find(x=>x.id===taskId);
+  if (!t) return;
+  t.progress = val;
+  await pushTask(t);
+  renderProgress();
+}
+
+function quickAddSubtask(taskId) {
+  expandingTaskId = taskId;
+  openSubtaskModal();
+}
+
 function isHighPriority(t) {
   return t.priority==='High' || t.priority===true || t.priority==='true';
 }
@@ -712,8 +739,6 @@ function taskCard(t) {
   const dimmed = (t.status==='Done'||t.status==='Dropped') ? ' dimmed' : '';
   const hp = isHighPriority(t);
   const priorityTag = hp ? '<span class="priority-tag">High priority</span>' : '';
-
-  // Start date only shown for certain statuses
   const showStart = ['In progress','Done','Paused','Dropped'].includes(t.status);
   const startStr = (showStart && cleanDate(t.start))
     ? `<span class="date-chip"><span class="date-chip-label">Started</span>${fmtDate(t.start)}</span>`
@@ -721,13 +746,31 @@ function taskCard(t) {
   const dueStr = cleanDate(t.due)
     ? `<span class="date-chip ${dueClass(t.due)}"><span class="date-chip-label">Due</span>${fmtDate(t.due)}</span>`
     : '';
-
-  // Original due date — only show if different from current due
   const origDue = cleanDate(t.originalDue);
   const curDue = cleanDate(t.due);
   const origDueStr = (origDue && origDue !== curDue)
     ? `<span style="font-size:10px;color:var(--text3)">Originally due ${fmtDate(t.originalDue)}</span>`
     : '';
+
+  // Subtasks
+  const subs = getSubtasksFor(t.id);
+  const subsDone = subs.filter(s=>s.done==='true'||s.done===true).length;
+  const subsLabel = subs.length ? `${subsDone}/${subs.length} subtasks` : '';
+  const pct = getProgress(t);
+  const autoProgress = subs.length > 0;
+
+  // Subtask expand section
+  const subsHtml = subs.length ? `
+    <div id="subs-${t.id}" style="display:none;margin-top:8px;border-top:1px solid var(--border);padding-top:8px">
+      ${subs.map(s=>`
+        <div class="subtask-row">
+          <input type="checkbox" class="subtask-check" ${s.done==='true'||s.done===true?'checked':''} onchange="toggleSubtask('${s.id}',this.checked)">
+          <span class="subtask-title ${s.done==='true'||s.done===true?'done':''}">${s.title}</span>
+          <span class="badge ${ownerBadge(s.owner)}">${s.owner}</span>
+          ${cleanDate(s.due)?`<span class="subtask-due">${fmtDate(s.due)}</span>`:''}
+          <button class="btn btn-sm btn-danger" onclick="deleteSubtask('${s.id}')">×</button>
+        </div>`).join('')}
+    </div>` : '';
 
   return `<div class="card${dimmed}" id="tc-${t.id}">
     <div class="card-top">
@@ -741,6 +784,16 @@ function taskCard(t) {
       <span class="badge ${catBadge(t.cat)}">${t.cat}</span>
     </div>
     ${t.notes ? `<div class="card-notes">${t.notes}</div>` : ''}
+    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <input type="range" min="0" max="100" step="10" value="${pct}"
+        ${autoProgress?'disabled':''}
+        style="flex:1;min-width:80px;accent-color:var(--michelle);${autoProgress?'opacity:.6':''}"
+        oninput="updateCardProgress('${t.id}',this.value)"
+        onchange="saveCardProgress('${t.id}',this.value)">
+      <span style="font-size:11px;font-weight:600;color:var(--text2);width:30px;text-align:right">${pct}%</span>
+      ${subsLabel ? `<span class="subtask-count" style="cursor:pointer" onclick="toggleSubtaskList('${t.id}')">${subsLabel} ▾</span>` : ''}
+    </div>
+    ${subsHtml}
     <div class="card-actions">
       <select onchange="updateStatus('${t.id}',this.value)" style="font-size:11px;padding:3px 8px;border-radius:20px;border:1px solid var(--border2)">
         <option value="">Change status…</option>
@@ -750,7 +803,7 @@ function taskCard(t) {
         <option value="Paused">Paused</option>
         <option value="Dropped">Dropped</option>
       </select>
-      <button class="btn btn-sm" onclick="openExpandModal('${t.id}')">⊕ Details</button>
+      <button class="btn btn-sm" onclick="quickAddSubtask('${t.id}')">+ Subtask</button>
       <button class="btn btn-sm" onclick="editTask('${t.id}')">Edit</button>
       <button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')">Delete</button>
       ${origDueStr ? `<span style="margin-left:auto">${origDueStr}</span>` : ''}
