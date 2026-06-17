@@ -166,6 +166,14 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
 .subtask-title.done{text-decoration:line-through;color:var(--text3)}
 .subtask-due{font-size:11px;color:var(--text3);white-space:nowrap}
 .subtask-count{font-size:11px;color:#854F0B;padding:1px 7px;background:#FAEEDA;border-radius:20px;white-space:nowrap}
+.link-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--matthew-dark);background:var(--matthew-light);padding:2px 8px;border-radius:20px;text-decoration:none;margin-right:4px;margin-bottom:4px}
+.link-chip:hover{background:var(--matthew);color:#fff}
+.link-remove{background:none;border:none;cursor:pointer;color:inherit;font-size:12px;padding:0;line-height:1;opacity:.7}
+.link-remove:hover{opacity:1}
+.modal-link-row{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border)}
+.modal-link-row:last-child{border-bottom:none}
+.modal-link-label{font-size:12px;color:var(--text);flex:1}
+.modal-link-url{font-size:11px;color:var(--text3);flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Progress slider */
 .prog-slider{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:4px;outline:none;cursor:pointer;background:linear-gradient(to right,var(--green) 0%,var(--green) var(--val,0%),var(--bg2) var(--val,0%),var(--bg2) 100%)}
 .prog-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;border:2.5px solid var(--green);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.2)}
@@ -312,7 +320,10 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
   </div>
 
   <div id="panel-progress" class="panel">
-    <div class="section-head"><h2>In progress</h2></div>
+    <div class="section-head">
+      <h2>In progress</h2>
+      <button class="btn btn-sm" id="prog-mytasks-btn" onclick="toggleProgMyTasks()">◉ My tasks</button>
+    </div>
     <div id="progress-active"></div>
     <hr class="divider">
     <div class="section-head" style="margin-top:0"><h2>All other tasks</h2></div>
@@ -406,7 +417,16 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
         <span>High priority</span>
       </label>
     </div>
-    <div class="field"><label>Notes</label><textarea id="t-notes" placeholder="Context, sub-tasks, contacts, links…"></textarea></div>
+    <div class="field"><label>Notes</label><textarea id="t-notes" placeholder="Context, contacts, notes…"></textarea></div>
+    <div class="field">
+      <label>Links</label>
+      <div id="t-links-list"></div>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <input type="text" id="t-link-label" placeholder="Label (e.g. Fall schedule)" style="flex:1;font-size:12px;padding:5px 8px;border-radius:var(--radius);border:1px solid var(--border2)">
+        <input type="url" id="t-link-url" placeholder="https://..." style="flex:2;font-size:12px;padding:5px 8px;border-radius:var(--radius);border:1px solid var(--border2)">
+        <button class="btn btn-sm" onclick="addTaskLink()">+ Add</button>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeTaskModal()">Cancel</button>
       <button class="btn btn-primary" id="task-save-btn" onclick="saveTask()">✓ Save task</button>
@@ -443,6 +463,15 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
       </div>
     </div>
     <div class="field"><label>Entry</label><textarea id="log-text" placeholder="What happened, what's next, hours worked…" style="height:90px"></textarea></div>
+    <div class="field">
+      <label>Links</label>
+      <div id="log-links-list"></div>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <input type="text" id="log-link-label" placeholder="Label" style="flex:1;font-size:12px;padding:5px 8px;border-radius:var(--radius);border:1px solid var(--border2)">
+        <input type="url" id="log-link-url" placeholder="https://..." style="flex:2;font-size:12px;padding:5px 8px;border-radius:var(--radius);border:1px solid var(--border2)">
+        <button class="btn btn-sm" onclick="addLogLink()">+ Add</button>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn" onclick="closeLogModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveLog()">✓ Save</button>
@@ -752,6 +781,61 @@ function quickAddSubtask(taskId) {
   openSubtaskModal();
 }
 
+// ── Links ─────────────────────────────────────────────────
+let taskLinks = []; // [{label, url}] for current modal
+let logLinks  = []; // [{label, url}] for current log modal
+
+function renderModalLinks(links, listId, removeFunc) {
+  const el = document.getElementById(listId);
+  if (!el) return;
+  if (!links.length) { el.innerHTML = ''; return; }
+  el.innerHTML = links.map((l,i) => `
+    <div class="modal-link-row">
+      <span class="modal-link-label">🔗 ${l.label||l.url}</span>
+      <span class="modal-link-url">${l.url}</span>
+      <button class="btn btn-sm btn-danger" onclick="${removeFunc}(${i})">×</button>
+    </div>`).join('');
+}
+
+function addTaskLink() {
+  const label = document.getElementById('t-link-label').value.trim();
+  const url   = document.getElementById('t-link-url').value.trim();
+  if (!url) return;
+  taskLinks.push({label: label||url, url});
+  document.getElementById('t-link-label').value = '';
+  document.getElementById('t-link-url').value = '';
+  renderModalLinks(taskLinks, 't-links-list', 'removeTaskLink');
+}
+function removeTaskLink(i) {
+  taskLinks.splice(i,1);
+  renderModalLinks(taskLinks, 't-links-list', 'removeTaskLink');
+}
+
+function addLogLink() {
+  const label = document.getElementById('log-link-label').value.trim();
+  const url   = document.getElementById('log-link-url').value.trim();
+  if (!url) return;
+  logLinks.push({label: label||url, url});
+  document.getElementById('log-link-label').value = '';
+  document.getElementById('log-link-url').value = '';
+  renderModalLinks(logLinks, 'log-links-list', 'removeLogLink');
+}
+function removeLogLink(i) {
+  logLinks.splice(i,1);
+  renderModalLinks(logLinks, 'log-links-list', 'removeLogLink');
+}
+
+function linksHtml(linksJson) {
+  if (!linksJson) return '';
+  try {
+    const links = JSON.parse(linksJson);
+    if (!links.length) return '';
+    return `<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">
+      ${links.map(l=>`<a href="${l.url}" target="_blank" rel="noopener" class="link-chip">🔗 ${l.label||l.url}</a>`).join('')}
+    </div>`;
+  } catch(e) { return ''; }
+}
+
 function isHighPriority(t) {
   return t.priority==='High' || t.priority===true || t.priority==='true';
 }
@@ -813,6 +897,7 @@ function taskCard(t) {
       ${subsToggle}
     </div>
     ${t.notes ? `<div class="card-notes">${t.notes}</div>` : ''}
+    ${linksHtml(t.links)}
     ${subsHtml}
     <div class="card-actions">
       <select onchange="updateStatus('${t.id}',this.value)" style="font-size:11px;padding:3px 8px;border-radius:20px;border:1px solid var(--border2)">
@@ -951,6 +1036,7 @@ function renderLog() {
         <button class="btn btn-sm btn-danger" onclick="deleteLog('${l.id}')" style="margin-left:auto">Delete</button>
       </div>
       <div class="log-text">${l.text}</div>
+      ${linksHtml(l.links)}
     </div>`).join('') : '<div class="empty">No log entries yet.</div>';
 }
 
@@ -960,7 +1046,11 @@ const AY_MONTHS = [
   {y:2026,m:10},{y:2026,m:11},{y:2026,m:12},
   {y:2027,m:0},{y:2027,m:1},{y:2027,m:2},{y:2027,m:3},{y:2027,m:4},{y:2027,m:5}
 ];
-let calIdx = 3; // default to August 2026
+let calIdx = (() => {
+  const now = new Date();
+  const idx = AY_MONTHS.findIndex(m => m.y === now.getFullYear() && m.m === now.getMonth());
+  return idx >= 0 ? idx : 3;
+})();
 let calPriorityOnly = false;
 
 function buildCalMonthSelect() {
@@ -1198,16 +1288,11 @@ async function updateStatus(id, val) {
     t.start = today();
   }
 
-  // Build status log entry
-  const logEntry = val
-    ? `${val}: ${today()}`
-    : `Cleared: ${today()}`;
-  t.statusLog = t.statusLog
-    ? t.statusLog + ' | ' + logEntry
-    : logEntry;
+  // Build status log entry silently in Sheet only
+  const logEntry = val ? `${val}: ${today()}` : `Cleared: ${today()}`;
+  t.statusLog = t.statusLog ? t.statusLog + ' | ' + logEntry : logEntry;
 
   await pushTask(t);
-  await pushLog({id:'l'+Date.now(),date:today(),type:'Note',text:`Marked "${t.title}" as ${val||'no status'}`,addedBy:currentUser});
   renderAll();
 }
 
@@ -1255,15 +1340,13 @@ async function deleteTask(id) {
   tasks = tasks.filter(t=>t.id!==id);
   if (connected) {
     try {
-      const result = await api({action:'softDeleteTask', id, deletedOn:today()});
-      console.log('Soft delete result:', result);
-    } catch(e) {
-      console.error('Soft delete error:', e);
-    }
+      await api({action:'softDeleteTask', id, deletedOn:today()});
+    } catch(e) { console.error('Soft delete error:', e); }
   }
   renderAll();
   if (item) showToast(`Deleted "${item.title.slice(0,40)}${item.title.length>40?'…':''}"`, 'task', item);
 }
+
 async function deleteMilestone(id) {
   const item = milestones.find(m=>m.id===id);
   deletedMilestoneIds.add(id);
@@ -1272,6 +1355,7 @@ async function deleteMilestone(id) {
   renderMilestones();
   if (item) showToast(`Removed milestone "${item.title}"`, 'milestone', item);
 }
+
 async function deleteLog(id) {
   const item = logs.find(l=>l.id===id);
   logs = logs.filter(l=>l.id!==id);
@@ -1299,6 +1383,8 @@ function openTaskModal(taskId) {
     document.getElementById('t-due').value = cleanDate(t.due) || '';
     document.getElementById('t-priority').checked = isHighPriority(t);
     document.getElementById('t-notes').value = t.notes || '';
+    try { taskLinks = JSON.parse(t.links||'[]'); } catch(e) { taskLinks = []; }
+    renderModalLinks(taskLinks, 't-links-list', 'removeTaskLink');
   } else {
     document.getElementById('t-title').value = '';
     document.getElementById('t-cat').value = 'Operations';
@@ -1308,6 +1394,8 @@ function openTaskModal(taskId) {
     document.getElementById('t-due').value = '';
     document.getElementById('t-priority').checked = false;
     document.getElementById('t-notes').value = '';
+    taskLinks = [];
+    renderModalLinks(taskLinks, 't-links-list', 'removeTaskLink');
   }
   toggleStartField();
   document.getElementById('task-modal').classList.add('open');
@@ -1348,6 +1436,7 @@ async function saveTask() {
     due:newDue,
     originalDue,
     notes:document.getElementById('t-notes').value,
+    links: JSON.stringify(taskLinks),
     added:today(), addedBy:currentUser
   };
   if (editingTaskId) {
@@ -1355,7 +1444,6 @@ async function saveTask() {
     if (idx>-1) tasks[idx]=t;
   } else {
     tasks.push(t);
-    await pushLog({id:'l'+Date.now(),date:today(),type:'Note',text:`Added task: "${title}"`,addedBy:currentUser});
   }
   await pushTask(t);
   btn.innerHTML='✓ Save task'; btn.disabled=false;
@@ -1402,6 +1490,8 @@ async function saveMilestone() {
 function openLogModal() {
   document.getElementById('log-date').value=today();
   document.getElementById('log-text').value='';
+  logLinks = [];
+  renderModalLinks(logLinks, 'log-links-list', 'removeLogLink');
   document.getElementById('log-modal').classList.add('open');
   document.getElementById('log-text').focus();
 }
@@ -1410,7 +1500,9 @@ async function saveLog() {
   const text = document.getElementById('log-text').value.trim();
   if (!text) return;
   const entry = {id:'l'+Date.now(),date:document.getElementById('log-date').value,
-    type:document.getElementById('log-type').value,text,addedBy:currentUser};
+    type:document.getElementById('log-type').value,text,
+    links: JSON.stringify(logLinks),
+    addedBy:currentUser};
   await pushLog(entry);
   closeLogModal(); renderLog(); renderDashboard();
 }
@@ -1566,10 +1658,20 @@ async function saveSubtask() {
   renderAll();
 }
 
+let progMyTasksActive = false;
+
+function toggleProgMyTasks() {
+  progMyTasksActive = !progMyTasksActive;
+  const btn = document.getElementById('prog-mytasks-btn');
+  if (btn) btn.className = 'btn btn-sm' + (progMyTasksActive ? ' btn-active' : '');
+  renderProgress();
+}
+
 // ── Progress tab ──────────────────────────────────────────
 function renderProgress() {
-  const active = tasks.filter(t => t.status==='In progress');
-  const other  = tasks.filter(t => t.status!=='In progress' && t.status!=='Done' && t.status!=='Dropped')
+  const filter = t => !progMyTasksActive || t.owner === currentUser || t.owner === 'All';
+  const active = tasks.filter(t => t.status==='In progress' && filter(t));
+  const other  = tasks.filter(t => t.status!=='In progress' && t.status!=='Done' && t.status!=='Dropped' && filter(t))
     .sort((a,b) => new Date(cleanDate(a.due)||'9999') - new Date(cleanDate(b.due)||'9999'));
 
   const ownerAccent = {
