@@ -224,7 +224,6 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
       </div>
       <select id="f-status" onchange="renderTasks()">
         <option value="">All statuses</option>
-        <option value="">No status</option>
         <option value="In progress">In progress</option>
         <option value="Done">Done</option>
         <option value="Paused">Paused</option>
@@ -656,7 +655,6 @@ function taskCard(t) {
     <div class="card-actions">
       <select onchange="updateStatus('${t.id}',this.value)" style="font-size:11px;padding:3px 8px;border-radius:20px;border:1px solid var(--border2)">
         <option value="">Change status…</option>
-        <option value="">— No status</option>
         <option value="In progress">In progress</option>
         <option value="Done">Done</option>
         <option value="Paused">Paused</option>
