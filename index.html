@@ -609,6 +609,7 @@ let taskView = 'month';
 let myTasksActive = false;
 const deletedIds = new Set(); // tracks soft-deleted task IDs locally
 const deletedMilestoneIds = new Set(); // tracks deleted milestone IDs locally
+const pendingSaveIds = new Set(); // tasks saved locally but not yet confirmed in Sheet
 
 function setStatus(state, msg) {
   document.getElementById('status-dot').className = 'status-dot ' + state;
@@ -1513,10 +1514,13 @@ async function saveTask() {
   if (editingTaskId) {
     const idx = tasks.findIndex(x=>x.id===editingTaskId);
     if (idx>-1) tasks[idx]=t;
+    pendingSaveIds.add(t.id);
   } else {
     tasks.push(t);
+    pendingSaveIds.add(t.id);
   }
   await pushTask(t);
+  pendingSaveIds.delete(t.id);
   btn.innerHTML='✓ Save task'; btn.disabled=false;
   closeTaskModal(); renderAll();
 }
@@ -1826,8 +1830,10 @@ setInterval(async () => {
   if (connected) {
     const data = await api({action:'read'});
     if (!data.error) {
+      const pending = tasks.filter(t => pendingSaveIds.has(t.id));
       tasks = (data.tasks && data.tasks.length ? data.tasks : tasks)
         .filter(t => t.deleted !== 'true' && !deletedIds.has(t.id));
+      pending.forEach(p => { if (!tasks.find(t=>t.id===p.id)) tasks.push(p); });
       milestones = (data.milestones && data.milestones.length ? data.milestones : milestones)
         .filter(m => !deletedMilestoneIds.has(m.id));
       logs = data.logs || logs;
