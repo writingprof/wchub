@@ -632,8 +632,12 @@ function taskCard(t) {
 
   // Start date only shown for certain statuses
   const showStart = ['In progress','Done','Paused','Dropped'].includes(t.status);
-  const startStr = (showStart && cleanDate(t.start)) ? `<span class="date-chip"><span class="date-chip-label">Start</span>${fmtDate(t.start)}</span>` : '';
-  const dueStr = cleanDate(t.due) ? `<span class="date-chip ${dueClass(t.due)}"><span class="date-chip-label">Due</span>${fmtDate(t.due)}</span>` : '';
+  const startStr = (showStart && cleanDate(t.start))
+    ? `<span class="date-chip"><span class="date-chip-label">Started</span>${fmtDate(t.start)}</span>`
+    : '';
+  const dueStr = cleanDate(t.due)
+    ? `<span class="date-chip ${dueClass(t.due)}"><span class="date-chip-label">Due</span>${fmtDate(t.due)}</span>`
+    : '';
 
   // Original due date — only show if different from current due
   const origDue = cleanDate(t.originalDue);
@@ -657,6 +661,7 @@ function taskCard(t) {
     <div class="card-actions">
       <select onchange="updateStatus('${t.id}',this.value)" style="font-size:11px;padding:3px 8px;border-radius:20px;border:1px solid var(--border2)">
         <option value="">Change status…</option>
+        <option value="prompt-clear">— No status</option>
         <option value="In progress">In progress</option>
         <option value="Done">Done</option>
         <option value="Paused">Paused</option>
@@ -1048,12 +1053,27 @@ function renderCalendar() {
 function renderAll() { renderDashboard(); renderTasks(); renderMilestones(); renderLog(); renderCalendar(); }
 
 async function updateStatus(id, val) {
-  if (!val) return;
+  if (val === 'prompt-clear') val = '';
   const t = tasks.find(x=>x.id===id);
   if (!t) return;
+  const oldStatus = t.status;
   t.status = val;
+
+  // Auto-populate start date when first set to In progress
+  if (val === 'In progress' && !cleanDate(t.start)) {
+    t.start = today();
+  }
+
+  // Build status log entry
+  const logEntry = val
+    ? `${val}: ${today()}`
+    : `Cleared: ${today()}`;
+  t.statusLog = t.statusLog
+    ? t.statusLog + ' | ' + logEntry
+    : logEntry;
+
   await pushTask(t);
-  await pushLog({id:'l'+Date.now(),date:today(),type:'Note',text:`Marked "${t.title}" as ${val}`,addedBy:currentUser});
+  await pushLog({id:'l'+Date.now(),date:today(),type:'Note',text:`Marked "${t.title}" as ${val||'no status'}`,addedBy:currentUser});
   renderAll();
 }
 
@@ -1147,7 +1167,7 @@ function openTaskModal(taskId) {
     document.getElementById('t-title').value = '';
     document.getElementById('t-cat').value = 'Operations';
     document.getElementById('t-owner').value = 'Carter';
-    document.getElementById('t-status').value = 'To do';
+    document.getElementById('t-status').value = '';
     document.getElementById('t-start').value = '';
     document.getElementById('t-due').value = '';
     document.getElementById('t-priority').checked = false;
