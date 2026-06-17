@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="WC Hub">
+<meta name="theme-color" content="#1D9E75">
+<link rel="manifest" href="manifest.json">
 <title>Writing Center Hub — AY 2026–27</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
@@ -1841,6 +1846,13 @@ setInterval(async () => {
     }
   }
 }, 30000);
+
+// Register service worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/wchub/sw.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>
