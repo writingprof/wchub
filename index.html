@@ -389,13 +389,18 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
           <option value="Development">Development</option>
         </select>
       </div>
-      <div class="field"><label>Owner</label>
-        <select id="t-owner">
-          <option value="Carter">Carter</option>
-          <option value="Michelle">Michelle</option>
-          <option value="Matthew">Matthew</option>
-          <option value="All">All three</option>
-        </select>
+      <div class="field"><label>Assigned to</label>
+        <div style="display:flex;gap:16px;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="t-owner-michelle" style="accent-color:var(--michelle);width:15px;height:15px"> Michelle
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="t-owner-matthew" style="accent-color:var(--matthew);width:15px;height:15px"> Matthew
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="t-owner-carter" style="accent-color:var(--carter);width:15px;height:15px"> Carter
+          </label>
+        </div>
       </div>
     </div>
     <div class="two-col">
@@ -699,6 +704,11 @@ function ownerBadge(o) {
   const m = {Michelle:'b-michelle',Matthew:'b-matthew',Carter:'b-carter'};
   return m[o] || 'b-all';
 }
+function ownerBadges(ownerStr) {
+  if (!ownerStr) return '<span class="badge b-all">Unassigned</span>';
+  return ownerStr.split(',').map(o=>o.trim()).filter(Boolean)
+    .map(o=>`<span class="badge ${ownerBadge(o)}">${o}</span>`).join('');
+}
 function dotClass(p) { return p==='High'?'dot-high':p==='Medium'?'dot-med':'dot-low'; }
 function cleanDate(d) {
   // Normalize any date format to YYYY-MM-DD or return ''
@@ -892,7 +902,7 @@ function taskCard(t) {
     <div class="card-meta">
       ${priorityTag}
       ${t.status ? `<span class="badge ${statusBadge(t.status)}">${t.status}</span>` : ''}
-      <span class="badge ${ownerBadge(t.owner)}">${t.owner}</span>
+      ${ownerBadges(t.owner)}
       <span class="badge ${catBadge(t.cat)}">${t.cat}</span>
       ${subsToggle}
     </div>
@@ -920,12 +930,13 @@ function applyFilters(list) {
   const fs = document.getElementById('f-status').value;
   const fo = document.getElementById('f-owner').value;
   const fc = document.getElementById('f-cat').value;
-  return list.filter(t =>
-    (!fs || t.status===fs) &&
-    (!fo || t.owner===fo) &&
-    (!fc || t.cat===fc) &&
-    (!myTasksActive || t.owner===currentUser || t.owner==='All')
-  );
+  return list.filter(t => {
+    const owners = (t.owner||'').split(',').map(o=>o.trim());
+    return (!fs || t.status===fs) &&
+      (!fo || owners.includes(fo)) &&
+      (!fc || t.cat===fc) &&
+      (!myTasksActive || owners.includes(currentUser));
+  });
 }
 
 function renderDashboard() {
@@ -955,7 +966,7 @@ function renderDashboard() {
     ? upcoming.map(t=>`<div class="card">
         <div class="card-top"><div class="dot ${dotClass(t.priority)}"></div><div class="card-title">${t.title}</div></div>
         <div class="card-meta">
-          <span class="badge ${ownerBadge(t.owner)}">${t.owner}</span>
+          ${ownerBadges(t.owner)}
           <span class="badge ${catBadge(t.cat)}">${t.cat}</span>
           <span class="due-tag ${dueClass(t.due)}">📅 Due ${fmtDate(t.due)}</span>
         </div>
@@ -1082,9 +1093,10 @@ function calJump() {
 }
 
 function ownerColor(o) {
-  if (o==='Michelle') return 'owner-michelle';
-  if (o==='Matthew')  return 'owner-matthew';
-  if (o==='Carter')   return 'owner-carter';
+  const first = (o||'').split(',')[0].trim();
+  if (first==='Michelle') return 'owner-michelle';
+  if (first==='Matthew')  return 'owner-matthew';
+  if (first==='Carter')   return 'owner-carter';
   return 'owner-all';
 }
 
@@ -1377,7 +1389,10 @@ function openTaskModal(taskId) {
     const t = tasks.find(x=>x.id===taskId);
     document.getElementById('t-title').value = t.title;
     document.getElementById('t-cat').value = t.cat || 'Operations';
-    document.getElementById('t-owner').value = t.owner;
+    const owners = (t.owner||'').split(',').map(o=>o.trim());
+    document.getElementById('t-owner-michelle').checked = owners.includes('Michelle');
+    document.getElementById('t-owner-matthew').checked = owners.includes('Matthew');
+    document.getElementById('t-owner-carter').checked = owners.includes('Carter');
     document.getElementById('t-status').value = t.status;
     document.getElementById('t-start').value = cleanDate(t.start) || '';
     document.getElementById('t-due').value = cleanDate(t.due) || '';
@@ -1388,7 +1403,9 @@ function openTaskModal(taskId) {
   } else {
     document.getElementById('t-title').value = '';
     document.getElementById('t-cat').value = 'Operations';
-    document.getElementById('t-owner').value = 'Carter';
+    document.getElementById('t-owner-michelle').checked = false;
+    document.getElementById('t-owner-matthew').checked = false;
+    document.getElementById('t-owner-carter').checked = false;
     document.getElementById('t-status').value = '';
     document.getElementById('t-start').value = '';
     document.getElementById('t-due').value = '';
@@ -1429,7 +1446,7 @@ async function saveTask() {
   const t = {
     id: editingTaskId||'t'+Date.now(), title,
     cat:document.getElementById('t-cat').value,
-    owner:document.getElementById('t-owner').value,
+    owner: ['Michelle','Matthew','Carter'].filter(o=>document.getElementById('t-owner-'+o.toLowerCase()).checked).join(',') || 'Unassigned',
     priority: document.getElementById('t-priority').checked ? 'High' : '',
     status:document.getElementById('t-status').value,
     start:document.getElementById('t-start').value,
@@ -1669,7 +1686,11 @@ function toggleProgMyTasks() {
 
 // ── Progress tab ──────────────────────────────────────────
 function renderProgress() {
-  const filter = t => !progMyTasksActive || t.owner === currentUser || t.owner === 'All';
+  const filter = t => {
+    if (!progMyTasksActive) return true;
+    const owners = (t.owner||'').split(',').map(o=>o.trim());
+    return owners.includes(currentUser);
+  };
   const active = tasks.filter(t => t.status==='In progress' && filter(t));
   const other  = tasks.filter(t => t.status!=='In progress' && t.status!=='Done' && t.status!=='Dropped' && filter(t))
     .sort((a,b) => new Date(cleanDate(a.due)||'9999') - new Date(cleanDate(b.due)||'9999'));
@@ -1677,9 +1698,12 @@ function renderProgress() {
   const ownerAccent = {
     Michelle:'var(--michelle)',
     Matthew:'var(--matthew)',
-    Carter:'var(--carter)',
-    All:'var(--gray)'
+    Carter:'var(--carter)'
   };
+  function getAccent(ownerStr) {
+    const first = (ownerStr||'').split(',')[0].trim();
+    return ownerAccent[first] || 'var(--gray)';
+  }
 
   function progRow(t) {
     const pct = getProgress(t);
@@ -1704,10 +1728,18 @@ function renderProgress() {
     return `<div class="prog-row">
       <div class="prog-row-header">
         <span class="prog-title">${t.title}</span>
-        <span class="badge ${ownerBadge(t.owner)}">${t.owner}</span>
+        ${ownerBadges(t.owner)}
         ${subCount}
       </div>
-      ${sliderHtml}
+      <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+        <input type="range" min="0" max="100" step="10" value="${pct}"
+          class="prog-slider"
+          ${autoProgress ? 'disabled' : ''}
+          style="flex:1;--val:${pct}%"
+          oninput="updateProgFill('${t.id}',this.value);this.style.setProperty('--val',this.value+'%')"
+          onchange="saveCardProgress('${t.id}',this.value)">
+        <span id="prog-pct-${t.id}" style="font-size:12px;font-weight:600;color:var(--text2);width:34px;text-align:right">${pct}%</span>
+      </div>
     </div>`;
   }
 
