@@ -81,14 +81,11 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
 .card-actions{display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap}
 .badge{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:400;white-space:nowrap}
 /* Category badges */
-.b-management{background:#E6F1FB;color:#0C447C}
-.b-outreach{background:#FAEEDA;color:#854F0B}
+.b-operations{background:#E6F1FB;color:#0C447C}
 .b-programming{background:#EEEDFE;color:#3C3489}
-.b-communications{background:#E8F4E8;color:#2D5A2D}
-.b-assessment{background:#F5E6FB;color:#6B1F8A}
-.b-research{background:#E6FBFA;color:#0C5E5A}
-.b-field{background:#FBF0E6;color:#8A4A1F}
-.b-tutors{background:#F0F0FB;color:#3A3A7A}
+.b-development{background:#E1F5EE;color:#085041}
+/* Priority tag */
+.priority-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;background:#FEF0E6;color:#E8630A;border:1px solid #E8630A;white-space:nowrap}
 /* Status badges */
 .b-todo{background:var(--gray-light);color:var(--gray)}
 .b-inprog{background:var(--carter-light);color:var(--carter-dark)}
@@ -242,14 +239,9 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
       </select>
       <select id="f-cat" onchange="renderTasks()">
         <option value="">All categories</option>
-        <option value="Management">Management</option>
-        <option value="Outreach">Outreach</option>
+        <option value="Operations">Operations</option>
         <option value="Programming">Programming</option>
-        <option value="Communications">Communications</option>
-        <option value="Assessment">Assessment</option>
-        <option value="Research">Research</option>
-        <option value="Field">Field</option>
-        <option value="Tutors">Tutors</option>
+        <option value="Development">Development</option>
       </select>
       <button class="btn btn-sm" id="mytasks-btn" onclick="toggleMyTasks()">◉ My tasks</button>
     </div>
@@ -282,10 +274,11 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
   <div id="panel-calendar" class="panel">
     <div class="section-head">
       <h2>Calendar</h2>
-      <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <button class="btn btn-sm" onclick="calNav(-1)">‹ Prev</button>
         <select id="cal-month-select" onchange="calJump()" style="font-size:12px;padding:5px 8px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);font-family:'Inter',sans-serif"></select>
         <button class="btn btn-sm" onclick="calNav(1)">Next ›</button>
+        <button class="btn btn-sm" id="cal-priority-btn" onclick="toggleCalPriority()" style="border-color:#E8630A;color:#E8630A">Priority only</button>
       </div>
     </div>
     <div id="cal-legend" style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap"></div>
@@ -302,14 +295,9 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
     <div class="two-col">
       <div class="field"><label>Category</label>
         <select id="t-cat">
-          <option value="Management">Management</option>
-          <option value="Outreach">Outreach</option>
+          <option value="Operations">Operations</option>
           <option value="Programming">Programming</option>
-          <option value="Communications">Communications</option>
-          <option value="Assessment">Assessment</option>
-          <option value="Research">Research</option>
-          <option value="Field">Field</option>
-          <option value="Tutors">Tutors</option>
+          <option value="Development">Development</option>
         </select>
       </div>
       <div class="field"><label>Owner</label>
@@ -320,15 +308,10 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
           <option value="All">All three</option>
         </select>
       </div>
-      <div class="field"><label>Priority</label>
-        <select id="t-priority">
-          <option value="High">High</option>
-          <option value="Medium">Medium</option>
-          <option value="Low">Low</option>
-        </select>
-      </div>
+    </div>
+    <div class="two-col">
       <div class="field"><label>Status</label>
-        <select id="t-status">
+        <select id="t-status" onchange="toggleStartField()">
           <option value="To do">To do</option>
           <option value="In progress">In progress</option>
           <option value="Done">Done</option>
@@ -336,10 +319,14 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
           <option value="Dropped">Dropped</option>
         </select>
       </div>
-    </div>
-    <div class="two-col">
-      <div class="field"><label>Start date</label><input type="date" id="t-start"></div>
       <div class="field"><label>Due date</label><input type="date" id="t-due"></div>
+    </div>
+    <div class="field" id="start-field" style="display:none"><label>Start date</label><input type="date" id="t-start"></div>
+    <div class="field">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="t-priority" style="width:16px;height:16px;accent-color:#E8630A;cursor:pointer">
+        <span>High priority</span>
+      </label>
     </div>
     <div class="field"><label>Notes</label><textarea id="t-notes" placeholder="Context, sub-tasks, contacts, links…"></textarea></div>
     <div class="modal-actions">
@@ -589,10 +576,8 @@ function toggleMyTasks() {
 }
 
 function catBadge(c) {
-  const m = {Management:'b-management',Outreach:'b-outreach',Programming:'b-programming',
-    Communications:'b-communications',Assessment:'b-assessment',Research:'b-research',
-    Field:'b-field',Tutors:'b-tutors'};
-  return m[c] || 'b-management';
+  const m = {Operations:'b-operations',Programming:'b-programming',Development:'b-development'};
+  return m[c] || 'b-operations';
 }
 function statusBadge(s) {
   const m = {'To do':'b-todo','In progress':'b-inprog','Done':'b-done','Paused':'b-paused','Dropped':'b-dropped'};
@@ -629,17 +614,40 @@ function dueClass(d) {
 }
 function today() { return new Date().toISOString().slice(0,10); }
 
+function isHighPriority(t) {
+  return t.priority==='High' || t.priority===true || t.priority==='true';
+}
+
+function toggleStartField() {
+  const status = document.getElementById('t-status').value;
+  const showStart = ['In progress','Done','Paused','Dropped'].includes(status);
+  document.getElementById('start-field').style.display = showStart ? 'block' : 'none';
+}
+
 function taskCard(t) {
   const dimmed = (t.status==='Done'||t.status==='Dropped') ? ' dimmed' : '';
-  const startStr = t.start ? `<span class="date-chip"><span class="date-chip-label">Start</span>${fmtDate(t.start)}</span>` : '';
-  const dueStr = t.due ? `<span class="date-chip ${dueClass(t.due)}"><span class="date-chip-label">Due</span>${fmtDate(t.due)}</span>` : '';
+  const hp = isHighPriority(t);
+  const priorityTag = hp ? '<span class="priority-tag">High priority</span>' : '';
+
+  // Start date only shown for certain statuses
+  const showStart = ['In progress','Done','Paused','Dropped'].includes(t.status);
+  const startStr = (showStart && cleanDate(t.start)) ? `<span class="date-chip"><span class="date-chip-label">Start</span>${fmtDate(t.start)}</span>` : '';
+  const dueStr = cleanDate(t.due) ? `<span class="date-chip ${dueClass(t.due)}"><span class="date-chip-label">Due</span>${fmtDate(t.due)}</span>` : '';
+
+  // Original due date — only show if different from current due
+  const origDue = cleanDate(t.originalDue);
+  const curDue = cleanDate(t.due);
+  const origDueStr = (origDue && origDue !== curDue)
+    ? `<span style="font-size:10px;color:var(--text3)">Originally due ${fmtDate(t.originalDue)}</span>`
+    : '';
+
   return `<div class="card${dimmed}" id="tc-${t.id}">
     <div class="card-top">
-      <div class="dot ${dotClass(t.priority)}" title="${t.priority} priority"></div>
       <div class="card-title">${t.title}</div>
       ${(startStr||dueStr) ? `<div class="card-date-group">${startStr}${dueStr}</div>` : ''}
     </div>
     <div class="card-meta">
+      ${priorityTag}
       <span class="badge ${statusBadge(t.status)}">${t.status}</span>
       <span class="badge ${ownerBadge(t.owner)}">${t.owner}</span>
       <span class="badge ${catBadge(t.cat)}">${t.cat}</span>
@@ -656,6 +664,7 @@ function taskCard(t) {
       </select>
       <button class="btn btn-sm" onclick="editTask('${t.id}')">Edit</button>
       <button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')">×</button>
+      ${origDueStr ? `<span style="margin-left:auto">${origDueStr}</span>` : ''}
     </div>
   </div>`;
 }
@@ -720,8 +729,11 @@ function renderDashboard() {
 function renderTasks() {
   const filtered = applyFilters(tasks);
   const sorted = [...filtered].sort((a,b)=>{
-    const p={High:0,Medium:1,Low:2};
-    return (p[a.priority]||1)-(p[b.priority]||1)||(new Date(cleanDate(a.due)||'9999')-new Date(cleanDate(b.due)||'9999'));
+    // High priority first, then by due date
+    const ap = (a.priority==='High'||a.priority===true||a.priority==='true') ? 0 : 1;
+    const bp = (b.priority==='High'||b.priority===true||b.priority==='true') ? 0 : 1;
+    if (ap !== bp) return ap - bp;
+    return (new Date(cleanDate(a.due)||'9999')-new Date(cleanDate(b.due)||'9999'));
   });
 
   if (taskView==='list') {
@@ -795,6 +807,7 @@ const AY_MONTHS = [
   {y:2027,m:0},{y:2027,m:1},{y:2027,m:2},{y:2027,m:3},{y:2027,m:4},{y:2027,m:5}
 ];
 let calIdx = 3; // default to August 2026
+let calPriorityOnly = true;
 
 function buildCalMonthSelect() {
   const sel = document.getElementById('cal-month-select');
@@ -806,6 +819,14 @@ function buildCalMonthSelect() {
     sel.appendChild(opt);
   });
   sel.value = calIdx;
+}
+
+function toggleCalPriority() {
+  calPriorityOnly = !calPriorityOnly;
+  const btn = document.getElementById('cal-priority-btn');
+  btn.textContent = calPriorityOnly ? 'Priority only' : 'All tasks';
+  btn.style.background = calPriorityOnly ? '#FEF0E6' : 'var(--bg)';
+  renderCalendar();
 }
 
 function calNav(dir) {
@@ -835,8 +856,9 @@ function renderCalendar() {
   const monthStart = new Date(y, m, 1);
   const monthEnd   = new Date(y, m+1, 0, 23, 59, 59);
 
-  // Filter tasks
-  const filtered = applyFilters(tasks).filter(t => t.status !== 'Dropped');
+  // Filter tasks respecting myTasks and priority toggle
+  let filtered = applyFilters(tasks).filter(t => t.status !== 'Dropped');
+  if (calPriorityOnly) filtered = filtered.filter(t => isHighPriority(t));
   const inMonth = filtered.filter(t => {
     const s = cleanDate(t.start); const d = cleanDate(t.due);
     if (!s && !d) return false;
@@ -1101,22 +1123,24 @@ function openTaskModal(taskId) {
   if (taskId) {
     const t = tasks.find(x=>x.id===taskId);
     document.getElementById('t-title').value = t.title;
-    document.getElementById('t-cat').value = t.cat;
+    document.getElementById('t-cat').value = t.cat || 'Operations';
     document.getElementById('t-owner').value = t.owner;
-    document.getElementById('t-priority').value = t.priority;
     document.getElementById('t-status').value = t.status;
-    document.getElementById('t-start').value = t.start || '';
-    document.getElementById('t-due').value = t.due || '';
+    document.getElementById('t-start').value = cleanDate(t.start) || '';
+    document.getElementById('t-due').value = cleanDate(t.due) || '';
+    document.getElementById('t-priority').checked = isHighPriority(t);
     document.getElementById('t-notes').value = t.notes || '';
   } else {
-    ['t-title','t-notes'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('t-cat').value='Management';
-    document.getElementById('t-owner').value='Carter';
-    document.getElementById('t-priority').value='Medium';
-    document.getElementById('t-status').value='To do';
-    document.getElementById('t-start').value='';
-    document.getElementById('t-due').value='';
+    document.getElementById('t-title').value = '';
+    document.getElementById('t-cat').value = 'Operations';
+    document.getElementById('t-owner').value = 'Carter';
+    document.getElementById('t-status').value = 'To do';
+    document.getElementById('t-start').value = '';
+    document.getElementById('t-due').value = '';
+    document.getElementById('t-priority').checked = false;
+    document.getElementById('t-notes').value = '';
   }
+  toggleStartField();
   document.getElementById('task-modal').classList.add('open');
   document.getElementById('t-title').focus();
 }
@@ -1128,14 +1152,32 @@ async function saveTask() {
   if (!title) { document.getElementById('t-title').focus(); return; }
   const btn = document.getElementById('task-save-btn');
   btn.innerHTML='<span class="spinner"></span> Saving…'; btn.disabled=true;
+  const newDue = document.getElementById('t-due').value;
+  // Preserve originalDue: set on first save, never overwrite
+  let originalDue = '';
+  if (editingTaskId) {
+    const existing = tasks.find(x=>x.id===editingTaskId);
+    if (existing) {
+      const existingDue = cleanDate(existing.due);
+      const existingOrigDue = cleanDate(existing.originalDue);
+      if (existingOrigDue) {
+        // Already has an original — keep it
+        originalDue = existing.originalDue;
+      } else if (existingDue && existingDue !== cleanDate(newDue)) {
+        // Due date is being changed for first time — lock in the original
+        originalDue = existing.due;
+      }
+    }
+  }
   const t = {
     id: editingTaskId||'t'+Date.now(), title,
     cat:document.getElementById('t-cat').value,
     owner:document.getElementById('t-owner').value,
-    priority:document.getElementById('t-priority').value,
+    priority: document.getElementById('t-priority').checked ? 'High' : '',
     status:document.getElementById('t-status').value,
     start:document.getElementById('t-start').value,
-    due:document.getElementById('t-due').value,
+    due:newDue,
+    originalDue,
     notes:document.getElementById('t-notes').value,
     added:today(), addedBy:currentUser
   };
@@ -1210,6 +1252,19 @@ async function saveLog() {
 
 buildCalMonthSelect();
 loadData();
+
+// Auto-refresh every 30 seconds
+setInterval(async () => {
+  if (connected) {
+    const data = await api({action:'read'});
+    if (!data.error) {
+      tasks = data.tasks && data.tasks.length ? data.tasks : tasks;
+      milestones = data.milestones && data.milestones.length ? data.milestones : milestones;
+      logs = data.logs || logs;
+      renderAll();
+    }
+  }
+}, 30000);
 </script>
 </body>
 </html>
