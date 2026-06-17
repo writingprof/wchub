@@ -144,7 +144,12 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--michelle);border-radius:50%;animation:spin .7s linear infinite}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-/* Progress tab */
+.prog-ring{width:36px;height:36px;flex-shrink:0}
+.prog-ring circle{fill:none;stroke-width:4}
+.prog-ring .track{stroke:var(--bg2)}
+.prog-ring .fill{stroke:var(--michelle);stroke-linecap:round;transition:stroke-dashoffset .3s;transform:rotate(-90deg);transform-origin:50% 50%}
+.prog-ring-wrap{position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.prog-ring-label{position:absolute;font-size:8px;font-weight:700;color:var(--text2);text-align:center;line-height:1}
 .prog-row{margin-bottom:10px}
 .prog-row-header{display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap}
 .prog-title{font-size:12px;font-weight:500;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -698,9 +703,37 @@ function dueClass(d) {
 }
 function today() { return new Date().toISOString().slice(0,10); }
 
+function progressRing(pct, owner) {
+  if (pct === 0) return '';
+  const r = 14;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (pct/100)*circ;
+  const colors = {Michelle:'var(--michelle)',Matthew:'var(--matthew)',Carter:'var(--carter)',All:'var(--gray)'};
+  const color = colors[owner] || 'var(--michelle)';
+  return `<div class="prog-ring-wrap" style="width:36px;height:36px">
+    <svg class="prog-ring" viewBox="0 0 36 36">
+      <circle class="track" cx="18" cy="18" r="${r}" stroke="var(--bg3)"/>
+      <circle class="fill" cx="18" cy="18" r="${r}"
+        stroke="${color}"
+        stroke-dasharray="${circ}"
+        stroke-dashoffset="${offset}"
+        fill="none" stroke-width="4" stroke-linecap="round"
+        transform="rotate(-90 18 18)"/>
+    </svg>
+    <span class="prog-ring-label">${pct}%</span>
+  </div>`;
+}
+
+const openSubtaskLists = new Set();
+
 function toggleSubtaskList(taskId) {
+  if (openSubtaskLists.has(taskId)) {
+    openSubtaskLists.delete(taskId);
+  } else {
+    openSubtaskLists.add(taskId);
+  }
   const el = document.getElementById('subs-'+taskId);
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  if (el) el.style.display = openSubtaskLists.has(taskId) ? 'block' : 'none';
 }
 
 function updateCardProgress(taskId, val) {
@@ -741,27 +774,22 @@ function taskCard(t) {
   const priorityTag = hp ? '<span class="priority-tag">High priority</span>' : '';
   const showStart = ['In progress','Done','Paused','Dropped'].includes(t.status);
   const startStr = (showStart && cleanDate(t.start))
-    ? `<span class="date-chip"><span class="date-chip-label">Started</span>${fmtDate(t.start)}</span>`
-    : '';
+    ? `<span class="date-chip"><span class="date-chip-label">Started</span>${fmtDate(t.start)}</span>` : '';
   const dueStr = cleanDate(t.due)
-    ? `<span class="date-chip ${dueClass(t.due)}"><span class="date-chip-label">Due</span>${fmtDate(t.due)}</span>`
-    : '';
+    ? `<span class="date-chip ${dueClass(t.due)}"><span class="date-chip-label">Due</span>${fmtDate(t.due)}</span>` : '';
   const origDue = cleanDate(t.originalDue);
   const curDue = cleanDate(t.due);
   const origDueStr = (origDue && origDue !== curDue)
-    ? `<span style="font-size:10px;color:var(--text3)">Originally due ${fmtDate(t.originalDue)}</span>`
-    : '';
-
-  // Subtasks
+    ? `<span style="font-size:10px;color:var(--text3)">Originally due ${fmtDate(t.originalDue)}</span>` : '';
   const subs = getSubtasksFor(t.id);
   const subsDone = subs.filter(s=>s.done==='true'||s.done===true).length;
-  const subsLabel = subs.length ? `${subsDone}/${subs.length} subtasks` : '';
   const pct = getProgress(t);
-  const autoProgress = subs.length > 0;
-
-  // Subtask expand section
+  const ring = pct > 0 ? progressRing(pct, t.owner) : '';
+  const isOpen = openSubtaskLists.has(t.id);
+  const subsToggle = subs.length
+    ? `<span class="subtask-count" style="cursor:pointer" onclick="toggleSubtaskList('${t.id}')">${subsDone}/${subs.length} subtasks ▾</span>` : '';
   const subsHtml = subs.length ? `
-    <div id="subs-${t.id}" style="display:none;margin-top:8px;border-top:1px solid var(--border);padding-top:8px">
+    <div id="subs-${t.id}" style="display:${isOpen?'block':'none'};margin-top:8px;border-top:1px solid var(--border);padding-top:8px">
       ${subs.map(s=>`
         <div class="subtask-row">
           <input type="checkbox" class="subtask-check" ${s.done==='true'||s.done===true?'checked':''} onchange="toggleSubtask('${s.id}',this.checked)">
@@ -775,24 +803,19 @@ function taskCard(t) {
   return `<div class="card${dimmed}" id="tc-${t.id}">
     <div class="card-top">
       <div class="card-title">${t.title}</div>
-      ${(startStr||dueStr) ? `<div class="card-date-group">${startStr}${dueStr}</div>` : ''}
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;margin-left:8px">
+        ${ring}
+        ${(startStr||dueStr) ? `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">${startStr}${dueStr}</div>` : ''}
+      </div>
     </div>
     <div class="card-meta">
       ${priorityTag}
       ${t.status ? `<span class="badge ${statusBadge(t.status)}">${t.status}</span>` : ''}
       <span class="badge ${ownerBadge(t.owner)}">${t.owner}</span>
       <span class="badge ${catBadge(t.cat)}">${t.cat}</span>
+      ${subsToggle}
     </div>
     ${t.notes ? `<div class="card-notes">${t.notes}</div>` : ''}
-    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
-      <input type="range" min="0" max="100" step="10" value="${pct}"
-        ${autoProgress?'disabled':''}
-        style="flex:1;min-width:80px;accent-color:var(--michelle);${autoProgress?'opacity:.6':''}"
-        oninput="updateCardProgress('${t.id}',this.value)"
-        onchange="saveCardProgress('${t.id}',this.value)">
-      <span style="font-size:11px;font-weight:600;color:var(--text2);width:30px;text-align:right">${pct}%</span>
-      ${subsLabel ? `<span class="subtask-count" style="cursor:pointer" onclick="toggleSubtaskList('${t.id}')">${subsLabel} ▾</span>` : ''}
-    </div>
     ${subsHtml}
     <div class="card-actions">
       <select onchange="updateStatus('${t.id}',this.value)" style="font-size:11px;padding:3px 8px;border-radius:20px;border:1px solid var(--border2)">
@@ -1011,7 +1034,7 @@ function renderCalendar() {
 
   // Milestones in this month
   const msMo = milestones.filter(ms => {
-    const d = new Date(ms.date+'T00:00:00');
+    const d = new Date((cleanDate(ms.date)||ms.date)+'T00:00:00');
     return d >= monthStart && d <= monthEnd;
   });
 
@@ -1137,12 +1160,13 @@ function renderCalendar() {
 
     // Milestone flags — sit in reserved bottom lane below all task bars
     msMo.forEach(ms => {
-      const idx = weekDays.findIndex(wd => wd.dateStr === ms.date);
+      const msDate = cleanDate(ms.date) || ms.date;
+      const idx = weekDays.findIndex(wd => wd.dateStr === msDate);
       if (idx < 0) return;
       const colW = 100/7;
       const left = idx * colW;
       const topPos = maxLane * BAR_H + 2;
-      html += `<div style="position:absolute;left:calc(${left}% + 2px);top:${topPos}px;z-index:3;display:flex;align-items:center;gap:3px;max-width:calc(${colW}% - 4px);overflow:hidden">
+      html += `<div style="position:absolute;left:calc(${left}% + 2px);top:${topPos}px;z-index:4;display:flex;align-items:center;gap:3px;max-width:calc(${colW}% - 4px);overflow:hidden">
         <span style="font-size:13px;color:var(--carter);flex-shrink:0">⚑</span>
         <span style="font-size:9px;font-weight:600;color:var(--carter);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ms.title}</span>
       </div>`;
@@ -1585,8 +1609,8 @@ function renderProgress() {
     const pct = getProgress(t);
     const subs = getSubtasksFor(t.id);
     const subCount = subs.length ? `<span class="subtask-count">${subs.filter(s=>s.done==='true'||s.done===true).length}/${subs.length} subtasks</span>` : '';
+    const autoProgress = subs.length > 0;
 
-    // Position bar on AY timeline
     const s = cleanDate(t.start) || cleanDate(t.due);
     const e = cleanDate(t.due) || cleanDate(t.start);
     let leftPct = 0, widthPct = 100;
@@ -1605,19 +1629,29 @@ function renderProgress() {
     };
     const [bg, fg] = ownerColors[t.owner] || ownerColors['All'];
 
+    const slider = !autoProgress ? `
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <span style="font-size:11px;color:var(--text3)">Set progress:</span>
+        <input type="range" min="0" max="100" step="10" value="${pct}"
+          style="flex:1;accent-color:${fg}"
+          oninput="this.nextElementSibling.textContent=this.value+'%'"
+          onchange="saveCardProgress('${t.id}',this.value)">
+        <span style="font-size:11px;font-weight:600;color:var(--text2);width:30px">${pct}%</span>
+      </div>` : '';
+
     return `<div class="prog-row">
       <div class="prog-row-header">
         <span class="prog-title">${t.title}</span>
         <span class="badge ${ownerBadge(t.owner)}">${t.owner}</span>
         ${subCount}
         <span class="prog-pct">${pct}%</span>
-        <button class="btn btn-sm" onclick="openExpandModal('${t.id}')" style="font-size:10px;padding:2px 7px">Details</button>
       </div>
       <div class="prog-track">
         <div class="prog-position" style="left:${leftPct}%;width:${widthPct}%;background:${bg}">
           <div class="prog-fill-inner" style="width:${pct}%;background:${fg}"></div>
         </div>
       </div>
+      ${slider}
     </div>`;
   }
 
