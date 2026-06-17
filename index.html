@@ -486,6 +486,7 @@ let tasks = [], milestones = [], logs = [];
 let connected = false;
 let taskView = 'month';
 let myTasksActive = false;
+const deletedIds = new Set(); // tracks soft-deleted task IDs locally
 
 function setStatus(state, msg) {
   document.getElementById('status-dot').className = 'status-dot ' + state;
@@ -510,7 +511,7 @@ async function loadData() {
     const data = await api({action:'read'});
     if (data.error) throw new Error(data.error);
     tasks = (data.tasks && data.tasks.length ? data.tasks : DEFAULT_TASKS)
-      .filter(t => t.deleted !== 'true');
+      .filter(t => t.deleted !== 'true' && !deletedIds.has(t.id));
     milestones = data.milestones && data.milestones.length ? data.milestones : DEFAULT_MILESTONES;
     logs = data.logs || [];
     connected = true;
@@ -1078,8 +1079,8 @@ async function undoDelete() {
   undoStack = null;
   setUndoBtn(false);
   if (type==='task') {
-    // Restore: clear deleted flags and re-save
     const restored = {...item, deleted:'', deletedOn:''};
+    deletedIds.delete(item.id); // un-mark locally
     tasks.push(restored);
     if (connected) await api({action:'saveTask', data:restored});
   } else if (type==='milestone') {
@@ -1095,7 +1096,7 @@ async function undoDelete() {
 async function deleteTask(id) {
   const item = tasks.find(t=>t.id===id);
   if (!item) return;
-  // Soft delete: mark as deleted in Sheet but remove from hub display
+  deletedIds.add(id); // mark locally immediately
   tasks = tasks.filter(t=>t.id!==id);
   if (connected) {
     const softDeleted = {...item, deleted:'true', deletedOn:today()};
@@ -1267,7 +1268,7 @@ setInterval(async () => {
     const data = await api({action:'read'});
     if (!data.error) {
       tasks = (data.tasks && data.tasks.length ? data.tasks : tasks)
-        .filter(t => t.deleted !== 'true');
+        .filter(t => t.deleted !== 'true' && !deletedIds.has(t.id));
       milestones = data.milestones && data.milestones.length ? data.milestones : milestones;
       logs = data.logs || logs;
       renderAll();
