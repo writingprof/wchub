@@ -224,7 +224,7 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
       </div>
       <select id="f-status" onchange="renderTasks()">
         <option value="">All statuses</option>
-        <option value="To do">To do</option>
+        <option value="">No status</option>
         <option value="In progress">In progress</option>
         <option value="Done">Done</option>
         <option value="Paused">Paused</option>
@@ -312,7 +312,7 @@ body{font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:
     <div class="two-col">
       <div class="field"><label>Status</label>
         <select id="t-status" onchange="toggleStartField()">
-          <option value="To do">To do</option>
+          <option value="">—</option>
           <option value="In progress">In progress</option>
           <option value="Done">Done</option>
           <option value="Paused">Paused</option>
@@ -580,8 +580,8 @@ function catBadge(c) {
   return m[c] || 'b-operations';
 }
 function statusBadge(s) {
-  const m = {'To do':'b-todo','In progress':'b-inprog','Done':'b-done','Paused':'b-paused','Dropped':'b-dropped'};
-  return m[s] || 'b-todo';
+  const m = {'In progress':'b-inprog','Done':'b-done','Paused':'b-paused','Dropped':'b-dropped'};
+  return m[s] || '';
 }
 function ownerBadge(o) {
   const m = {Michelle:'b-michelle',Matthew:'b-matthew',Carter:'b-carter'};
@@ -648,7 +648,7 @@ function taskCard(t) {
     </div>
     <div class="card-meta">
       ${priorityTag}
-      <span class="badge ${statusBadge(t.status)}">${t.status}</span>
+      ${t.status ? `<span class="badge ${statusBadge(t.status)}">${t.status}</span>` : ''}
       <span class="badge ${ownerBadge(t.owner)}">${t.owner}</span>
       <span class="badge ${catBadge(t.cat)}">${t.cat}</span>
     </div>
@@ -656,7 +656,7 @@ function taskCard(t) {
     <div class="card-actions">
       <select onchange="updateStatus('${t.id}',this.value)" style="font-size:11px;padding:3px 8px;border-radius:20px;border:1px solid var(--border2)">
         <option value="">Change status…</option>
-        <option value="To do">To do</option>
+        <option value="">— No status</option>
         <option value="In progress">In progress</option>
         <option value="Done">Done</option>
         <option value="Paused">Paused</option>
@@ -687,10 +687,12 @@ function renderDashboard() {
   const inprog = active.filter(t=>t.status==='In progress').length;
   const paused = active.filter(t=>t.status==='Paused').length;
   const dropped = tasks.filter(t=>t.status==='Dropped').length;
+  const noStatus = active.filter(t=>!t.status).length;
   document.getElementById('metrics').innerHTML = `
     <div class="metric"><div class="metric-num">${active.length}</div><div class="metric-label">Total tasks</div></div>
-    <div class="metric"><div class="metric-num" style="color:var(--green)">${done}</div><div class="metric-label">Done</div></div>
+    <div class="metric"><div class="metric-num" style="color:var(--text3)">${noStatus}</div><div class="metric-label">Not started</div></div>
     <div class="metric"><div class="metric-num" style="color:var(--carter)">${inprog}</div><div class="metric-label">In progress</div></div>
+    <div class="metric"><div class="metric-num" style="color:var(--green)">${done}</div><div class="metric-label">Done</div></div>
     <div class="metric"><div class="metric-num" style="color:var(--amber)">${paused}</div><div class="metric-label">Paused</div></div>
     <div class="metric"><div class="metric-num" style="color:var(--text3)">${dropped}</div><div class="metric-label">Dropped</div></div>
   `;
