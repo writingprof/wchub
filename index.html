@@ -1099,16 +1099,12 @@ async function deleteTask(id) {
   deletedIds.add(id);
   tasks = tasks.filter(t=>t.id!==id);
   if (connected) {
-    const softDeleted = {...item, deleted:'true', deletedOn:today()};
-    console.log('Soft deleting task:', softDeleted);
     try {
-      const result = await api({action:'saveTask', data:softDeleted});
-      console.log('Save result:', result);
+      const result = await api({action:'softDeleteTask', id, deletedOn:today()});
+      console.log('Soft delete result:', result);
     } catch(e) {
-      console.error('Save error:', e);
+      console.error('Soft delete error:', e);
     }
-  } else {
-    console.log('Not connected — delete is local only');
   }
   renderAll();
   if (item) showToast(`Deleted "${item.title.slice(0,40)}${item.title.length>40?'…':''}"`, 'task', item);
