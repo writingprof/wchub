@@ -752,22 +752,20 @@ function today() { return new Date().toISOString().slice(0,10); }
 
 function progressRing(pct, owner) {
   if (pct === 0) return '';
-  const r = 14;
+  const r = 10;
   const circ = 2 * Math.PI * r;
   const offset = circ - (pct/100)*circ;
   const colors = {Michelle:'var(--michelle)',Matthew:'var(--matthew)',Carter:'var(--carter)',All:'var(--gray)'};
   const color = colors[owner] || 'var(--michelle)';
-  return `<div class="prog-ring-wrap" style="width:36px;height:36px">
-    <svg class="prog-ring" viewBox="0 0 36 36">
-      <circle class="track" cx="18" cy="18" r="${r}" stroke="var(--bg3)"/>
-      <circle class="fill" cx="18" cy="18" r="${r}"
-        stroke="${color}"
-        stroke-dasharray="${circ}"
-        stroke-dashoffset="${offset}"
-        fill="none" stroke-width="4" stroke-linecap="round"
-        transform="rotate(-90 18 18)"/>
+  return `<div class="prog-ring-wrap" style="width:26px;height:26px;flex-shrink:0">
+    <svg viewBox="0 0 26 26" width="26" height="26">
+      <circle cx="13" cy="13" r="${r}" fill="none" stroke="var(--bg3)" stroke-width="3"/>
+      <circle cx="13" cy="13" r="${r}" fill="none"
+        stroke="${color}" stroke-width="3" stroke-linecap="round"
+        stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
+        transform="rotate(-90 13 13)"/>
     </svg>
-    <span class="prog-ring-label">${pct}%</span>
+    <span class="prog-ring-label" style="font-size:7px">${pct}%</span>
   </div>`;
 }
 
@@ -959,7 +957,7 @@ function taskCard(t) {
   return `<div class="card${dimmed}" id="tc-${t.id}">
     <div class="card-top">
       <div class="card-title">${t.title}</div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;margin-left:8px">
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px">
         ${ring}
         ${(startStr||dueStr) ? `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">${startStr}${dueStr}</div>` : ''}
       </div>
