@@ -938,15 +938,20 @@ function taskCard(t) {
     ? `<span class="subtask-count" style="cursor:pointer" onclick="toggleSubtaskList('${t.id}')">${subsDone}/${subs.length} subtasks ▾</span>` : '';
   const subsHtml = subs.length ? `
     <div id="subs-${t.id}" style="display:${isOpen?'block':'none'};margin-top:8px;border-top:1px solid var(--border);padding-top:8px">
-      ${subs.map(s=>`
+      ${subs.map((s,i)=>`
         <div class="subtask-row">
+          <div style="display:flex;flex-direction:column;gap:1px;flex-shrink:0">
+            <button class="btn btn-sm" onclick="expandingTaskId='${t.id}';moveSubtask('${s.id}',-1)" ${i===0?'disabled':''} style="padding:1px 5px;font-size:10px;line-height:1;${i===0?'opacity:.3':''}">▲</button>
+            <button class="btn btn-sm" onclick="expandingTaskId='${t.id}';moveSubtask('${s.id}',1)" ${i===subs.length-1?'disabled':''} style="padding:1px 5px;font-size:10px;line-height:1;${i===subs.length-1?'opacity:.3':''}">▼</button>
+          </div>
           <input type="checkbox" class="subtask-check" ${s.done==='true'||s.done===true?'checked':''}
             ${t.status!=='In progress'?'disabled title="Mark task In progress to check subtasks"':''}
             onchange="toggleSubtask('${s.id}',this.checked)"
             style="${t.status!=='In progress'?'opacity:.4;cursor:not-allowed':''}">
-          <span class="subtask-title ${s.done==='true'||s.done===true?'done':''}">${s.title}</span>
+          <span class="subtask-title ${s.done==='true'||s.done===true?'done':''}" style="flex:1">${s.title}</span>
           <span class="badge ${ownerBadge(s.owner)}">${s.owner}</span>
           ${cleanDate(s.due)?`<span class="subtask-due">${fmtDate(s.due)}</span>`:''}
+          <button class="btn btn-sm" onclick="expandingTaskId='${t.id}';openSubtaskModal('${s.id}')" title="Edit">✎</button>
           <button class="btn btn-sm btn-danger" onclick="deleteSubtask('${s.id}')">×</button>
         </div>`).join('')}
     </div>` : '';
@@ -1657,6 +1662,12 @@ function updateProgressDisplay() {
   document.getElementById('expand-progress-val').textContent = val + '%';
 }
 
+function getSubtasksFor(taskId) {
+  return subtasks
+    .filter(s => s.parentId === taskId)
+    .sort((a,b) => (parseInt(a.sortOrder)||0) - (parseInt(b.sortOrder)||0));
+}
+
 function renderSubtaskList() {
   const subs = getSubtasksFor(expandingTaskId);
   const el = document.getElementById('expand-subtasks');
@@ -1664,19 +1675,44 @@ function renderSubtaskList() {
     el.innerHTML = '<div class="empty" style="padding:1rem 0">No subtasks yet.</div>';
     return;
   }
-  el.innerHTML = subs.map(s => `
+  el.innerHTML = subs.map((s,i) => `
     <div class="subtask-row">
-      <input type="checkbox" class="subtask-check" ${s.done==='true'||s.done===true?'checked':''} onchange="toggleSubtask('${s.id}',this.checked)">
-      <span class="subtask-title ${s.done==='true'||s.done===true?'done':''}">${s.title}</span>
+      <div style="display:flex;flex-direction:column;gap:1px;flex-shrink:0">
+        <button class="btn btn-sm" onclick="moveSubtask('${s.id}',-1)" ${i===0?'disabled style="opacity:.3"':''} style="padding:1px 5px;font-size:10px;line-height:1">▲</button>
+        <button class="btn btn-sm" onclick="moveSubtask('${s.id}',1)" ${i===subs.length-1?'disabled style="opacity:.3"':''} style="padding:1px 5px;font-size:10px;line-height:1">▼</button>
+      </div>
+      <input type="checkbox" class="subtask-check" ${s.done==='true'||s.done===true?'checked':''}
+        onchange="toggleSubtask('${s.id}',this.checked)">
+      <span class="subtask-title ${s.done==='true'||s.done===true?'done':''}" style="flex:1">${s.title}</span>
       <span class="badge ${ownerBadge(s.owner)}">${s.owner}</span>
       ${cleanDate(s.due)?`<span class="subtask-due">${fmtDate(s.due)}</span>`:''}
+      <button class="btn btn-sm" onclick="openSubtaskModal('${s.id}')" title="Edit subtask">✎</button>
       <button class="btn btn-sm btn-danger" onclick="deleteSubtask('${s.id}')">×</button>
     </div>`).join('');
-  // Update progress if auto-calculated
-  const subs2 = getSubtasksFor(expandingTaskId);
   const pct = getProgress(tasks.find(x=>x.id===expandingTaskId));
-  document.getElementById('expand-progress').value = pct;
-  document.getElementById('expand-progress-val').textContent = pct + '%';
+  const slider = document.getElementById('expand-progress');
+  const label = document.getElementById('expand-progress-val');
+  if (slider) slider.value = pct;
+  if (label) label.textContent = pct + '%';
+}
+
+async function moveSubtask(id, dir) {
+  const subs = getSubtasksFor(expandingTaskId);
+  const idx = subs.findIndex(s=>s.id===id);
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= subs.length) return;
+  const a = subs[idx];
+  const b = subs[newIdx];
+  const tempOrder = parseInt(a.sortOrder)||idx;
+  a.sortOrder = String(parseInt(b.sortOrder)||newIdx);
+  b.sortOrder = String(tempOrder);
+  if (connected) {
+    await api({action:'saveSubtask', data:a});
+    await api({action:'saveSubtask', data:b});
+  }
+  // Re-render both the expand modal list and the inline card list
+  if (document.getElementById('expand-subtasks')) renderSubtaskList();
+  renderAll();
 }
 
 async function toggleSubtask(id, checked) {
@@ -1717,14 +1753,17 @@ function closeSubtaskModal() { document.getElementById('subtask-modal').classLis
 async function saveSubtask() {
   const title = document.getElementById('st-title').value.trim();
   if (!title) return;
+  const existing = editingSubtaskId ? subtasks.find(x=>x.id===editingSubtaskId) : null;
   const s = {
     id: editingSubtaskId||'st'+Date.now(),
     parentId: expandingTaskId,
     title,
     owner: document.getElementById('st-owner').value,
     due: document.getElementById('st-due').value,
-    done: 'false',
-    added: today(), addedBy: currentUser
+    done: existing ? existing.done : 'false',
+    sortOrder: existing ? (existing.sortOrder||'0') : String(getSubtasksFor(expandingTaskId).length),
+    added: existing ? existing.added : today(),
+    addedBy: existing ? existing.addedBy : currentUser
   };
   if (editingSubtaskId) {
     const idx = subtasks.findIndex(x=>x.id===editingSubtaskId);
